@@ -324,8 +324,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 
 /* ---------- 상태 ---------- */
-let ME0="";try{ME0=localStorage.getItem("kcal-me")||""}catch(_){}
-const S={me:ME0,db:null,sample:null,people:[],peopleLoaded:false,offline:false,logs:{},range:"",unsub:null,
+const S={db:null,sample:null,people:[],peopleLoaded:false,offline:false,logs:{},range:"",unsub:null,
   view:"dash",pid:null,date:today(),month:today().slice(0,7),
   drafts:{},editing:null,confirmDel:null,goalEdit:{},sugg:null,cardIdx:0,tEdit:null};
 
@@ -517,9 +516,8 @@ function weekSumHTML(pid,wk){
 
 function dashHTML(){
   const wk=monday(S.date);
-  const order=S.people.some(p=>p.id===S.me)?[person(S.me),...S.people.filter(p=>p.id!==S.me)]:S.people;
-  const cards=order.map(p=>`<section class="card prow ${p.id===S.me?"mine":""}">
-      <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)}${p.id===S.me?` <span class="me">내 장부</span>`:""} <small>달력 보기 →</small></a>
+  const cards=S.people.map(p=>`<section class="card prow">
+      <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)} <small>달력 보기 →</small></a>
         <span class="chip">${md(S.date)} ${dowOf(S.date)} · <b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></div>
       <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
       <div class="pc-c">${shareHTML("d",p.id,S.date,true)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
@@ -549,7 +547,7 @@ function personHTML(){
       <span class="num">${fmt(t)}${g?" / "+fmt(g.v):""}</span></div>`}).join("");
   const [y,m]=S.month.split("-");
   const others=S.people.filter(o=>o.id!==p.id).map(o=>`<a class="back" href="#p-${o.id}">${esc(o.name)}</a>`).join(" · ");
-  return `<div class="top"><a class="back" href="#${S.me&&person(S.me)?S.me:""}">← 전체 현황</a><span class="back" style="cursor:default">다른 사람: ${others}</span></div>
+  return `<div class="top"><a class="back" href="#">← 전체 현황</a><span class="back" style="cursor:default">다른 사람: ${others}</span></div>
     <div class="phead"><h1>${esc(p.name)}</h1></div>
     <div class="pgrid">
       <div class="panel">
@@ -679,8 +677,7 @@ function saveGoal(ctx,pid){
 function go(){
   const h=decodeURIComponent(location.hash.slice(1));
   if(h.startsWith("p-")){S.view="person";S.pid=h.slice(2);S.month=S.date.slice(0,7)}
-  else{S.view="dash";S.pid=null;
-    if(/^[a-z]+$/.test(h)){S.me=h;try{localStorage.setItem("kcal-me",h)}catch(_){}}}
+  else{S.view="dash";S.pid=null}
   S.editing=null;S.confirmDel=null;S.sugg=null;
   subscribe();render();window.scrollTo(0,0);
 }
