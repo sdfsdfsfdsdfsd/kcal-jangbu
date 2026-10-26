@@ -73,6 +73,7 @@ button{cursor:pointer}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow>div:not(.prow-h){padding:14px 14px}.prow-h{padding:12px 14px}.prow .pc-c{border-left:0;border-top:1px solid var(--line)}}
 .tocal{margin-top:14px;display:flex;justify-content:center;align-items:center;height:44px;border:1.5px solid var(--line-strong);border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;background:var(--surface)}
 .tocal:hover{border-color:var(--accent);color:var(--accent)}
+.me{font-family:var(--f-body);font-size:12px;font-weight:700;background:var(--accent);color:var(--surface);border-radius:99px;padding:2px 9px;vertical-align:middle}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -323,7 +324,8 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);
 
 /* ---------- 상태 ---------- */
-const S={db:null,sample:null,people:[],peopleLoaded:false,offline:false,logs:{},range:"",unsub:null,
+let ME0="";try{ME0=localStorage.getItem("kcal-me")||""}catch(_){}
+const S={me:ME0,db:null,sample:null,people:[],peopleLoaded:false,offline:false,logs:{},range:"",unsub:null,
   view:"dash",pid:null,date:today(),month:today().slice(0,7),
   drafts:{},editing:null,confirmDel:null,goalEdit:{},sugg:null,cardIdx:0,tEdit:null};
 
@@ -515,8 +517,9 @@ function weekSumHTML(pid,wk){
 
 function dashHTML(){
   const wk=monday(S.date);
-  const cards=S.people.map(p=>`<section class="card prow">
-      <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)} <small>달력 보기 →</small></a>
+  const order=S.people.some(p=>p.id===S.me)?[person(S.me),...S.people.filter(p=>p.id!==S.me)]:S.people;
+  const cards=order.map(p=>`<section class="card prow ${p.id===S.me?"mine":""}">
+      <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)}${p.id===S.me?` <span class="me">내 장부</span>`:""} <small>달력 보기 →</small></a>
         <span class="chip">${md(S.date)} ${dowOf(S.date)} · <b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></div>
       <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
       <div class="pc-c">${shareHTML("d",p.id,S.date,true)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
@@ -546,7 +549,7 @@ function personHTML(){
       <span class="num">${fmt(t)}${g?" / "+fmt(g.v):""}</span></div>`}).join("");
   const [y,m]=S.month.split("-");
   const others=S.people.filter(o=>o.id!==p.id).map(o=>`<a class="back" href="#p-${o.id}">${esc(o.name)}</a>`).join(" · ");
-  return `<div class="top"><a class="back" href="#">← 전체 현황</a><span class="back" style="cursor:default">다른 사람: ${others}</span></div>
+  return `<div class="top"><a class="back" href="#${S.me&&person(S.me)?S.me:""}">← 전체 현황</a><span class="back" style="cursor:default">다른 사람: ${others}</span></div>
     <div class="phead"><h1>${esc(p.name)}</h1></div>
     <div class="pgrid">
       <div class="panel">
@@ -675,7 +678,9 @@ function saveGoal(ctx,pid){
 }
 function go(){
   const h=decodeURIComponent(location.hash.slice(1));
-  if(h.startsWith("p-")){S.view="person";S.pid=h.slice(2);S.month=S.date.slice(0,7)}else{S.view="dash";S.pid=null}
+  if(h.startsWith("p-")){S.view="person";S.pid=h.slice(2);S.month=S.date.slice(0,7)}
+  else{S.view="dash";S.pid=null;
+    if(/^[a-z]+$/.test(h)){S.me=h;try{localStorage.setItem("kcal-me",h)}catch(_){}}}
   S.editing=null;S.confirmDel=null;S.sugg=null;
   subscribe();render();window.scrollTo(0,0);
 }
