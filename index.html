@@ -585,6 +585,7 @@ function render(){
 /* ---------- 검색 ---------- */
 const norm=s=>String(s).replace(/\s/g,"").toLowerCase();
 function search(q){
+  q=String(q).replace(/날\s*것|날거/g,"생것").replace(/익힌\s*것/g,"삶은것");
   const nq=norm(q);if(!nq)return [];
   const toks=q.trim().toLowerCase().split(/\s+/).map(norm).filter(Boolean);
   const out=[],seen=new Set();
@@ -601,6 +602,9 @@ function search(q){
     const r=DB.rows[i],nm=norm(r[0]);
     let sc=(nm===Q.nq?0:nm.startsWith(Q.nq)?1:nm.includes(Q.nq)?2:4)*1000+Q.bonus;
     sc+=r[6]==="D"?0:r[6]==="R"?(Q.alias?0:150):(Q.toks.some(t=>norm(r[1]).includes(t))?0:300);
+    if(r[6]==="R"){const w=r[0].split(" ");
+      const w0=norm(w[0]);if(w0===Q.toks[0]||w0===Q.toks[0]+"류")sc-=1500;
+      if(/생것/.test(r[0]))sc-=60;if(/개량종|대표|평균/.test(r[0]))sc-=40;}
     sc+=Math.min(r[0].length,80);
     if(!best.has(i)||best.get(i)>sc)best.set(i,sc);
   }
