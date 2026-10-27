@@ -75,6 +75,18 @@ button{cursor:pointer}
 .tocal{margin-top:14px;display:flex;justify-content:center;align-items:center;height:44px;border:1.5px solid var(--line-strong);border-radius:8px;color:var(--ink);text-decoration:none;font-weight:600;font-size:15px;background:var(--surface)}
 .tocal:hover{border-color:var(--accent);color:var(--accent)}
 .me{font-family:var(--f-body);font-size:12px;font-weight:700;background:var(--accent);color:var(--surface);border-radius:99px;padding:2px 9px;vertical-align:middle}
+.modal{position:fixed;inset:0;background:rgba(10,15,13,.45);display:flex;align-items:center;justify-content:center;z-index:60;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.mbox{background:var(--surface);color:var(--ink);border-radius:12px;padding:22px 20px 18px;width:min(380px,100%);box-shadow:0 20px 60px rgba(0,0,0,.25);display:flex;flex-direction:column;gap:14px}
+.mbox h3{margin:0;font-size:20px;font-family:var(--f-display);font-weight:400}
+.exd{margin:0;font-size:13px;color:var(--muted)}
+.exrow{display:flex;align-items:center;gap:10px}
+.exn{font-weight:700;min-width:3em}
+.exbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1}
+.exb{height:48px;border-radius:8px;border:1.5px solid var(--line-strong);background:var(--surface);font-weight:700;font-size:16px}
+.exb:hover{border-color:var(--accent)}
+.exb.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.exfoot{display:flex;justify-content:flex-end;gap:8px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -283,6 +295,7 @@ body{font-size:16px}
   <div class="state"><b>장부를 펼치는 중</b>정환 · 영우 · 재현의 기록을 불러오고 있어요.</div>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="modal" id="exmodal" hidden role="dialog" aria-modal="true" aria-labelledby="exq"><div class="mbox" id="exbox"></div></div>
 
 <script>
 /* ---------- 음식 사전: [이름, 기준, g, kcal] (대략값) ---------- */
@@ -376,9 +389,10 @@ const itemLine=it=>[it.food,it.grams?fmt(it.grams)+"g":null,`(${fmt(it.kcal)}kca
 const isoDay=d=>`${d}(${dowOf(d)})`;
 function personText(pid,date){
   const list=items(pid,date),name=person(pid)?.name||"";
-  if(!list.length)return `* ${name}식단\n\n기록 없음`;
+  const ex=exOf(pid,date),exLine=typeof ex==="boolean"?`\n운동 - ${ex?"O":"X"}`:"";
+  if(!list.length)return `* ${name}식단\n\n기록 없음${exLine?"\n"+exLine:""}`;
   const body=groups(list).map(g=>(g.t?`[${g.t}]\n`:"")+g.items.map(itemLine).join("\n")).join("\n\n");
-  return `* ${name}식단\n\n${body}\n\n==========\n\n토탈 - ${fmt(dayTotal(pid,date))}kcal`;
+  return `* ${name}식단\n\n${body}\n\n==========\n\n토탈 - ${fmt(dayTotal(pid,date))}kcal${exLine}`;
 }
 function dayText(pid,date){
   if(!items(pid,date).length)return "";
@@ -386,6 +400,28 @@ function dayText(pid,date){
 }
 function allText(date){
   return isoDay(date)+"\n\n"+S.people.map(p=>personText(p.id,date)).join("\n\n\n");
+}
+let M=null;
+function openEx(pids,date,pre){
+  M={pids,date,pre,ans:Object.fromEntries(pids.map(p=>[p,exOf(p,date)]))};
+  drawEx();document.getElementById("exmodal").hidden=false;
+  document.querySelector("#exbox .exb")?.focus();
+}
+function drawEx(){
+  const one=M.pids.length===1;
+  const row=pid=>{const v=M.ans[pid];return `<div class="exrow">${one?"":`<span class="exn">${esc(person(pid)?.name||"")}</span>`}
+    <div class="exbtns"><button class="exb ${v===true?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="1">예</button>
+    <button class="exb ${v===false?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="0">아니오</button></div></div>`};
+  document.getElementById("exbox").innerHTML=`<p class="exd">${isoDay(M.date)}${one?" · "+esc(person(M.pids[0])?.name||""):""}</p>
+    <h3 id="exq">오늘 운동하셨습니까?</h3>
+    ${M.pids.map(row).join("")}
+    <div class="exfoot"><button class="btn line" data-act="ex-cancel">취소</button>
+    ${one?"":`<button class="btn" data-act="ex-copy">복사하기</button>`}</div>`;
+}
+function finishEx(){
+  const m=M;document.getElementById("exmodal").hidden=true;M=null;
+  for(const pid of m.pids){const v=m.ans[pid];if(typeof v==="boolean"&&v!==exOf(pid,m.date))setEx(pid,m.date,v)}
+  copyText(m.pids.length===1?dayText(m.pids[0],m.date):allText(m.date),m.pre);
 }
 async function copyText(txt,preId){
   try{await navigator.clipboard.writeText(txt);toast("복사했어요. 톡방에 붙여넣기 하세요.")}
@@ -405,15 +441,22 @@ function fail(e){
 function saveDay(pid,date){
   const k=key(pid,date),path="kcal_logs/"+k;
   return enqueue(path,async()=>{
-    const list=(S.logs[k]?.items)||[];
+    const list=(S.logs[k]?.items)||[],ex=S.logs[k]?.ex;
     if(!S.db) throw {code:"unavailable"};
-    if(list.length) await S.db.doc(path).set({person:pid,date,items:list});
+    const body={person:pid,date,items:list};if(typeof ex==="boolean")body.ex=ex;
+    if(list.length||typeof ex==="boolean") await S.db.doc(path).set(body);
     else await S.db.doc(path).delete();
   }).catch(fail);
 }
+function setEx(pid,date,v){
+  const k=key(pid,date);S.logs[k]={...(S.logs[k]||{person:pid,date,items:[]}),ex:v};
+  render();saveDay(pid,date);
+}
+const exOf=(pid,date)=>S.logs[key(pid,date)]?.ex;
 function setItems(pid,date,list){
   const k=key(pid,date);
-  S.logs[k]={person:pid,date,items:list};
+  const ex=S.logs[k]?.ex;
+  S.logs[k]={person:pid,date,items:list};if(typeof ex==="boolean")S.logs[k].ex=ex;
   render();saveDay(pid,date);
 }
 
@@ -742,8 +785,12 @@ document.addEventListener("click",e=>{
   if(a==="tab"){const i=+b.dataset.i,cs=document.getElementById("cards"),c=cs&&cs.children[i];
     if(c){cs.scrollTo({left:c.offsetLeft-cs.offsetLeft,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
     S.cardIdx=i;document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("on",j===i));return}
-  if(a==="copy")return copyText(dayText(pid,date),b.dataset.pre);
-  if(a==="copyall")return copyText(allText(date),null);
+  if(a==="copy")return openEx([pid],date,b.dataset.pre);
+  if(a==="copyall")return openEx(S.people.map(p=>p.id),date,null);
+  if(a==="ex-pick"){const v=b.dataset.v==="1";M.ans[b.dataset.pid]=v;
+    if(M.pids.length===1)return finishEx();return drawEx()}
+  if(a==="ex-copy")return finishEx();
+  if(a==="ex-cancel"){document.getElementById("exmodal").hidden=true;M=null;return}
   if(a==="del"){
     if(S.confirmDel===b.dataset.id){S.confirmDel=null;return setItems(pid,date,items(pid,date).filter(i=>i.id!==b.dataset.id))}
     S.confirmDel=b.dataset.id;return render();
@@ -809,6 +856,8 @@ document.addEventListener("focusout",e=>{
   if(e.target.dataset&&e.target.dataset.f==="food"&&S.sugg&&S.sugg.p===e.target.dataset.p){S.sugg=null;drawSugg(e.target.dataset.p)}
 });
 window.addEventListener("hashchange",go);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&M){document.getElementById("exmodal").hidden=true;M=null}});
+document.getElementById("exmodal").addEventListener("click",e=>{if(e.target.id==="exmodal"){e.currentTarget.hidden=true;M=null}});
 document.addEventListener("focusin",e=>{if(e.target.dataset&&e.target.dataset.f==="food")loadDB()});
 setTimeout(loadDB,1500);
 
