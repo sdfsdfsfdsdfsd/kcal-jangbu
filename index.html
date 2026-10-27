@@ -89,9 +89,11 @@ button{cursor:pointer}
 .exfoot{display:flex;justify-content:flex-end;gap:8px}
 .calsub{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:20px}
 .calsub .week{border-top:1px solid var(--line);padding-top:16px}
-.jump{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.jb{height:44px;padding:0 16px;border-radius:99px;border:1.5px solid var(--line-strong);background:var(--surface);font-weight:700;font-size:17px;display:inline-flex;align-items:center;gap:8px}
-.jb b{font-size:13px;color:var(--over);font-weight:600}
+.jump{display:flex;flex-direction:column;gap:8px;margin-top:12px;width:min(360px,100%)}
+.jb{min-height:48px;padding:0 16px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
+.jb .jn{font-weight:700;font-size:18px}
+.jb .jk{font-size:13px;color:var(--muted);white-space:nowrap}
+.jb .jk b{font-size:17px;color:var(--over);font-weight:700}
 .jb:hover{border-color:var(--ink)}
 .prow{scroll-margin-top:16px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
@@ -598,7 +600,7 @@ function dashHTML(){
       <div class="pc-c">${shareHTML("d",p.id,S.date,true)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
     </section>`).join("");
   return `<div class="top"><div class="brand"><h1>칼로리장부</h1><nav class="jump" aria-label="사람별로 이동">${["jeonghwan","jaehyun","youngwoo"].map(person).filter(Boolean).concat(S.people.filter(p=>!["jeonghwan","jaehyun","youngwoo"].includes(p.id)))
-      .map(p=>`<button class="jb" data-act="jump" data-pid="${p.id}">${esc(p.name)} <b class="num">${fmt(dayTotal(p.id,S.date))}</b></button>`).join("")}</nav></div>
+      .map(p=>`<button class="jb" data-act="jump" data-pid="${p.id}"><span class="jn">${esc(p.name)}</span><span class="jk">${S.date===today()?"오늘":md(S.date)} 먹은 칼로리 <b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></button>`).join("")}</nav></div>
     <div class="datebar"><button class="ib" data-act="day" data-n="-1" aria-label="전날">‹</button><span class="cur">${longDate(S.date)}</span>
       <button class="ib" data-act="day" data-n="1" aria-label="다음날">›</button>${S.date!==today()?`<button class="ib ghost" data-act="today">오늘</button>`:""}
       <button class="btn" data-act="copyall" data-date="${S.date}">세 명 일일표 한번에 복사</button></div></div>
