@@ -16,7 +16,7 @@
 /* Layout: 장부(ledger) — 사람별 카드 3장이 나란히, 영수증처럼 줄 긋는 식단 행과 이중선 합계. 개인 페이지는 월 달력 + 그날 장부 */
 :root{
   --bg:#ECEEED; --surface:#FFFFFF; --ink:#0F1512; --muted:#3F4A45; --line:#D3D8D5;
-  --accent:#146B47; --accent-soft:#D9EEE2; --over:#B3311E; --over-soft:#FBE2DD; --hi:#F4F5F4; --alt:#FAFAFA; --line-strong:#9AA59F; --head:#1C2622; --head-ink:#FFFFFF; --ex-yes:#1E8A4C; --ex-no:#C8372D;
+  --accent:#146B47; --accent-soft:#D9EEE2; --over:#B3311E; --over-soft:#FBE2DD; --hi:#F4F5F4; --alt:#FAFAFA; --line-strong:#9AA59F; --head:#1C2622; --head-ink:#FFFFFF; --ex-yes:#1E8A4C; --ex-no:#C8372D; --head-red:#FF6F61;
   --f-display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
   --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -24,10 +24,10 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0B0F0D; --surface:#151B18; --ink:#F1F4F2; --muted:#B4BEB9; --line:#2C3632;
-  --accent:#4FC390; --accent-soft:#16352A; --over:#F17A66; --over-soft:#3B1F1A; --hi:#1C2420; --alt:#19201D; --line-strong:#4A5852; --head:#26322D; --head-ink:#FFFFFF; --ex-yes:#2F9E5C; --ex-no:#D44A3E; color-scheme:dark}}
+  --accent:#4FC390; --accent-soft:#16352A; --over:#F17A66; --over-soft:#3B1F1A; --hi:#1C2420; --alt:#19201D; --line-strong:#4A5852; --head:#26322D; --head-ink:#FFFFFF; --ex-yes:#2F9E5C; --ex-no:#D44A3E; --head-red:#FF7B6E; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B0F0D; --surface:#151B18; --ink:#F1F4F2; --muted:#B4BEB9; --line:#2C3632;
-  --accent:#4FC390; --accent-soft:#16352A; --over:#F17A66; --over-soft:#3B1F1A; --hi:#1C2420; --alt:#19201D; --line-strong:#4A5852; --head:#26322D; --head-ink:#FFFFFF; --ex-yes:#2F9E5C; --ex-no:#D44A3E; color-scheme:dark}
+  --accent:#4FC390; --accent-soft:#16352A; --over:#F17A66; --over-soft:#3B1F1A; --hi:#1C2420; --alt:#19201D; --line-strong:#4A5852; --head:#26322D; --head-ink:#FFFFFF; --ex-yes:#2F9E5C; --ex-no:#D44A3E; --head-red:#FF7B6E; color-scheme:dark}
 
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
@@ -245,8 +245,9 @@ body{font-size:16px}
 .prow-h,.prow:nth-child(2) .prow-h{background:var(--head);border-bottom:0}
 .prow-h .pname{color:var(--head-ink);font-size:30px}
 .prow-h .pname small{color:var(--head-ink);opacity:.75;font-size:13px}
-.prow-h .chip{color:var(--head-ink);opacity:.85;font-size:14px}
+.prow-h .chip{color:var(--head-ink);font-size:14px}
 .prow-h .chip b{color:var(--head-ink);font-size:18px}
+.prow-h .chip .hk,.prow-h .chip .hk b{color:var(--head-red)}
 .lbl{font-size:15px}
 .lbl span{font-size:13px;color:var(--muted)}
 .lbl::before{width:5px;height:15px}
@@ -587,7 +588,7 @@ function dashHTML(){
   const wk=monday(S.date);
   const cards=S.people.map(p=>`<section class="card prow">
       <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)} <small>달력 보기 →</small></a>
-        <span class="chip">${md(S.date)} ${dowOf(S.date)} · <b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></div>
+        <span class="chip">${md(S.date)} ${dowOf(S.date)} · <span class="hk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></span></div>
       <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
       <div class="pc-c">${shareHTML("d",p.id,S.date,true)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
     </section>`).join("");
