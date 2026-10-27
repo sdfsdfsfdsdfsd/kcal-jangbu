@@ -639,8 +639,7 @@ function dashHTML(){
   return `<div class="top"><div class="brand"><h1><a class="home" href="./" data-act="reload" title="새로고침">칼로리장부</a></h1><nav class="jump" aria-label="사람별로 이동">${["jeonghwan","jaehyun","youngwoo"].map(person).filter(Boolean).concat(S.people.filter(p=>!["jeonghwan","jaehyun","youngwoo"].includes(p.id)))
       .map(p=>`<button class="jb" data-act="jump" data-pid="${p.id}"><span class="jn">${esc(p.name)}</span><span class="jk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b>kcal</span></button>`).join("")}</nav></div>
     <div class="datebar"><button class="ib" data-act="day" data-n="-1" aria-label="전날">‹</button><span class="cur">${longDate(S.date)}</span>
-      <button class="ib" data-act="day" data-n="1" aria-label="다음날">›</button>${S.date!==today()?`<button class="ib ghost" data-act="today">오늘</button>`:""}
-      <button class="btn" data-act="copyall" data-date="${S.date}">세 명 일일표 한번에 복사</button></div></div>
+      <button class="ib" data-act="day" data-n="1" aria-label="다음날">›</button>${S.date!==today()?`<button class="ib ghost" data-act="today">오늘</button>`:""}</div></div>
     ${S.people.length?`<div class="cards" id="cards">${cards}</div>`:`<div class="state"><b>참여자를 불러오는 중</b>잠시만 기다려 주세요.</div>`}`;
 }
 
