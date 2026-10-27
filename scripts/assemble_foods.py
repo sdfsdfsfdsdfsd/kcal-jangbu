@@ -1,4 +1,4 @@
-"""브라우저에서 받아 Firestore(kcal_foods_upload)에 잠시 올려둔 식약처 DB 조각을 합쳐 foods.json으로 저장."""
+"""(가공식품 포함) 브라우저에서 받아 Firestore(kcal_foods_upload)에 잠시 올려둔 식약처 DB 조각을 합쳐 foods.json으로 저장."""
 import json, sys, requests
 KEY = "AIzaSyB-89z89yrJb8dDB36_3Sqc51504AywvWk"
 BASE = "https://firestore.googleapis.com/v1/projects/project-1389660754781189097/databases/(default)/documents/kcal_foods_upload/"
