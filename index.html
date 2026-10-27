@@ -101,6 +101,14 @@ button{cursor:pointer}
 .jb:hover{border-color:var(--ink)}
 .prow{scroll-margin-top:16px}
 .dweek{margin-top:28px;border-top:1px solid var(--line);padding-top:24px}
+
+.dtot .total{margin-top:0}
+.sumbox{margin-top:14px;border:1.5px solid var(--line-strong);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.sumbox .sr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sumbox .sr>span{font-weight:600;font-size:14px}
+.sumbox .red{color:var(--over);font-size:17px}
+.sumbox .mut{color:var(--muted);font-size:13px}
+.sumbox .scom{margin:4px 0 0;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted);line-height:1.5}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -549,8 +557,27 @@ function ledgerHTML(ctx,pid,date){
   const diff=daily-tot;
   return `<div class="sec"><p class="lbl">섭취 음식 <span>${longDate(date)}</span></p>
     <div class="foodbox"><ul class="ledger">${rows||`<li class="empty">아직 기록이 없어요. 음식 입력 칸에서 검색해 추가하세요.</li>`}</ul></div>
-    <div class="total"><span class="t">일간 칼로리</span><span class="v">${fmt(tot)} <small>kcal</small></span></div>
-    ${g?`<div class="dayvs">하루 기준 ${fmt(daily)} kcal · <b>${diff>=0?fmt(diff)+" 남음":fmt(-diff)+" 초과"}</b></div>`:""}
+  </div>`;
+}
+function dayTotHTML(pid,date){
+  const tot=dayTotal(pid,date),g=goalFor(pid,monday(date)),daily=g?g.v/7:0,diff=daily-tot;
+  return `<div class="sec dtot"><div class="total"><span class="t">일간 칼로리</span><span class="v">${fmt(tot)} <small>kcal</small></span></div>
+    ${g?`<div class="dayvs">하루 기준 ${fmt(daily)} kcal · <b>${diff>=0?fmt(diff)+" 남음":fmt(-diff)+" 초과"}</b></div>`:""}</div>`;
+}
+function weekNote(pid,wk){
+  const g=goalFor(pid,wk),days=weekDays(wk),td=today();
+  if(!g||td>days[6])return "";
+  const ti=td<days[0]?0:days.indexOf(td),left=7-ti;
+  const before=days.slice(0,ti).reduce((a,d)=>a+dayTotal(pid,d),0),budget=g.v-before;
+  return budget>0?`어제까지 ${fmt(before)} kcal 먹었으니, 오늘 포함 남은 ${left}일은 하루 평균 ${fmt(budget/left)} kcal씩 먹으면 딱 맞아요`
+    :`어제까지 이미 주간 목표를 ${fmt(-budget)} kcal 넘었어요`;
+}
+function sumHTML(pid,date){
+  const wk=monday(date),g=goalFor(pid,wk),wt=weekTotal(pid,wk),rem=g?g.v-wt:0,note=weekNote(pid,wk);
+  return `<div class="sumbox">
+    <div class="sr"><span>일간 칼로리</span><b class="num red">${fmt(dayTotal(pid,date))} kcal</b></div>
+    <div class="sr"><span>주간 남은 칼로리</span>${g?`<b class="num red">${rem>=0?fmt(rem)+" kcal 남음":fmt(-rem)+" kcal 초과"}</b>`:`<span class="mut">주간 목표를 먼저 정해 주세요</span>`}</div>
+    ${note?`<p class="scom">${note}</p>`:""}
   </div>`;
 }
 function addHTML(ctx,pid,date){
@@ -588,14 +615,7 @@ function sparkHTML(pid,wk){
 function weekSumHTML(pid,wk){
   const g=goalFor(pid,wk),tot=weekTotal(pid,wk),days=weekDays(wk),td=today();
   const pct=g?Math.min(100,tot/g.v*100):0,over=g&&tot>g.v,rem=g?g.v-tot:0;
-  /* 오늘은 아직 안 끝났으니, 어제까지 먹은 양만 빼고 오늘 포함 남은 날로 나눔 */
-  let note="";
-  if(g&&td<=days[6]){
-    const ti=td<days[0]?0:days.indexOf(td),left=7-ti;
-    const before=days.slice(0,ti).reduce((a,d)=>a+dayTotal(pid,d),0),budget=g.v-before;
-    note=budget>0?`어제까지 ${fmt(before)} kcal 먹었으니, 오늘 포함 남은 ${left}일은 하루 평균 ${fmt(budget/left)} kcal씩 먹으면 딱 맞아요`
-      :`어제까지 이미 주간 목표를 ${fmt(-budget)} kcal 넘었어요`;
-  }
+  const note=weekNote(pid,wk);
   return `<div class="sec week"><p class="lbl">주간 칼로리</p>
     <div class="wnums"><span class="big">${fmt(tot)}${g?` <small>/ ${fmt(g.v)} kcal</small>`:` <small>kcal</small>`}</span>
       ${g?`<span class="rem ${over?"over":""}">${over?fmt(-rem)+" 초과":fmt(rem)+" 남음"}</span>`:""}</div>
@@ -608,8 +628,8 @@ function dashHTML(){
   const cards=S.people.map(p=>`<section class="card prow" id="row-${p.id}">
       <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)} <small>달력 보기 →</small></a>
         <span class="chip">${md(S.date)} ${dowOf(S.date)} · <span class="hk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></span></div>
-      <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
-      <div class="pc-c">${shareHTML("d",p.id,S.date,true)}<div class="dweek">${weekSumHTML(p.id,wk)}</div><a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
+      <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${dayTotHTML(p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
+      <div class="pc-c">${shareHTML("d",p.id,S.date,true)}${sumHTML(p.id,S.date)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
     </section>`).join("");
   return `<div class="top"><div class="brand"><h1><a class="home" href="./" data-act="reload" title="새로고침">칼로리장부</a></h1><nav class="jump" aria-label="사람별로 이동">${["jeonghwan","jaehyun","youngwoo"].map(person).filter(Boolean).concat(S.people.filter(p=>!["jeonghwan","jaehyun","youngwoo"].includes(p.id)))
       .map(p=>`<button class="jb" data-act="jump" data-pid="${p.id}"><span class="jn">${esc(p.name)}</span><span class="jk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b>kcal</span></button>`).join("")}</nav></div>
@@ -650,8 +670,10 @@ function personHTML(){
       <div class="panel">
         ${goalHTML("p",p.id,wk)}
         ${addHTML("p",p.id,S.date)}
+        ${dayTotHTML(p.id,S.date)}
         ${ledgerHTML("p",p.id,S.date)}
         ${shareHTML("p",p.id,S.date,false)}
+        ${sumHTML(p.id,S.date)}
       </div>
     </div>`;
 }
