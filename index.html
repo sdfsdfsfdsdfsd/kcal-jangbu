@@ -250,8 +250,8 @@ body{font-size:16px}
 .hint{font-size:13px}
 .total .t{font-size:15px}
 .total .v{font-size:26px}
-.dayvs{font-size:14px;color:var(--over);font-weight:700}
-.total .v,.total .t{color:var(--over)}
+.dayvs{font-size:14px;color:var(--muted);font-weight:500}
+.dayvs b{color:var(--over);font-weight:700}
 .wnums .rem,.wnums .rem.over{color:var(--over)}
 .dayvs.over{color:var(--over)}
 .goal .gv{font-size:15px}
@@ -476,7 +476,7 @@ function ledgerHTML(ctx,pid,date){
   return `<div class="sec"><p class="lbl">섭취 음식 <span>${longDate(date)}</span></p>
     <div class="foodbox"><ul class="ledger">${rows||`<li class="empty">아직 기록이 없어요. 음식 입력 칸에서 검색해 추가하세요.</li>`}</ul></div>
     <div class="total"><span class="t">일간 칼로리</span><span class="v">${fmt(tot)} <small>kcal</small></span></div>
-    ${g?`<div class="dayvs ${diff<0?"over":""}">하루 기준 ${fmt(daily)} kcal · ${diff>=0?fmt(diff)+" 남음":fmt(-diff)+" 초과"}</div>`:""}
+    ${g?`<div class="dayvs">하루 기준 ${fmt(daily)} kcal · <b>${diff>=0?fmt(diff)+" 남음":fmt(-diff)+" 초과"}</b></div>`:""}
   </div>`;
 }
 function addHTML(ctx,pid,date){
