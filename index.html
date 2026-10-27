@@ -104,11 +104,12 @@ button{cursor:pointer}
 
 .dtot .total{margin-top:0}
 .sumbox{margin-top:14px;border:1.5px solid var(--line-strong);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
-.sumbox .sr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sumbox .sr{display:flex;justify-content:flex-start;align-items:baseline;gap:10px;flex-wrap:wrap}
 .sumbox .sr>span{font-weight:600;font-size:14px}
 .sumbox .red{color:var(--over);font-size:17px}
 .sumbox .mut{color:var(--muted);font-size:13px}
 .sumbox .scom{margin:4px 0 0;padding-top:8px;border-top:1px dashed var(--line);font-size:13px;color:var(--muted);line-height:1.5}
+.dbar{margin:10px 0 6px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -562,7 +563,8 @@ function ledgerHTML(ctx,pid,date){
 function dayTotHTML(pid,date){
   const tot=dayTotal(pid,date),g=goalFor(pid,monday(date)),daily=g?g.v/7:0,diff=daily-tot;
   return `<div class="sec dtot"><div class="total"><span class="t">일간 칼로리</span><span class="v">${fmt(tot)} <small>kcal</small></span></div>
-    ${g?`<div class="dayvs">하루 기준 ${fmt(daily)} kcal · <b>${diff>=0?fmt(diff)+" 남음":fmt(-diff)+" 초과"}</b></div>`:""}</div>`;
+    ${g?`<div class="bar dbar ${diff<0?"over":""}" role="progressbar" aria-valuemin="0" aria-valuemax="${Math.round(daily)}" aria-valuenow="${tot}"><i style="width:${Math.min(100,tot/daily*100)}%"></i></div>
+    <div class="dayvs">하루 기준 ${fmt(daily)} kcal · <b>${diff>=0?fmt(diff)+" 남음":fmt(-diff)+" 초과"}</b></div>`:""}</div>`;
 }
 function weekNote(pid,wk){
   const g=goalFor(pid,wk),days=weekDays(wk),td=today();
