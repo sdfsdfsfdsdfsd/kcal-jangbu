@@ -586,14 +586,21 @@ function sparkHTML(pid,wk){
     ${daily?`<p class="wnote">점선 = 하루 기준 ${fmt(daily)} kcal · 막대를 누르면 그날로 이동</p>`:""}</div>`;
 }
 function weekSumHTML(pid,wk){
-  const g=goalFor(pid,wk),tot=weekTotal(pid,wk);
-  const pct=g?Math.min(100,tot/g.v*100):0,over=g&&tot>g.v;
-  const idx=weekDays(wk).indexOf(S.date),left=idx>=0?7-idx:0,rem=g?g.v-tot:0;
+  const g=goalFor(pid,wk),tot=weekTotal(pid,wk),days=weekDays(wk),td=today();
+  const pct=g?Math.min(100,tot/g.v*100):0,over=g&&tot>g.v,rem=g?g.v-tot:0;
+  /* 오늘은 아직 안 끝났으니, 어제까지 먹은 양만 빼고 오늘 포함 남은 날로 나눔 */
+  let note="";
+  if(g&&td<=days[6]){
+    const ti=td<days[0]?0:days.indexOf(td),left=7-ti;
+    const before=days.slice(0,ti).reduce((a,d)=>a+dayTotal(pid,d),0),budget=g.v-before;
+    note=budget>0?`어제까지 ${fmt(before)} kcal 먹었으니, 오늘 포함 남은 ${left}일은 하루 평균 ${fmt(budget/left)} kcal씩 먹으면 딱 맞아요`
+      :`어제까지 이미 주간 목표를 ${fmt(-budget)} kcal 넘었어요`;
+  }
   return `<div class="sec week"><p class="lbl">주간 칼로리</p>
     <div class="wnums"><span class="big">${fmt(tot)}${g?` <small>/ ${fmt(g.v)} kcal</small>`:` <small>kcal</small>`}</span>
       ${g?`<span class="rem ${over?"over":""}">${over?fmt(-rem)+" 초과":fmt(rem)+" 남음"}</span>`:""}</div>
     ${g?`<div class="bar ${over?"over":""}"><i style="width:${pct}%"></i></div>`:""}
-    ${g&&!over&&left>0?`<div class="wnote">남은 ${left}일 동안 하루 평균 ${fmt(rem/left)} kcal까지 괜찮아요</div>`:""}</div>`;
+    ${note?`<div class="wnote">${note}</div>`:""}</div>`;
 }
 
 function dashHTML(){
