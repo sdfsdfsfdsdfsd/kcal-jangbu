@@ -16,7 +16,7 @@
 /* Layout: 장부(ledger) — 사람별 카드 3장이 나란히, 영수증처럼 줄 긋는 식단 행과 이중선 합계. 개인 페이지는 월 달력 + 그날 장부 */
 :root{
   --bg:#ECEEED; --surface:#FFFFFF; --ink:#0F1512; --muted:#3F4A45; --line:#D3D8D5;
-  --accent:#146B47; --accent-soft:#D9EEE2; --over:#B3311E; --over-soft:#FBE2DD; --hi:#F4F5F4; --alt:#FAFAFA; --line-strong:#9AA59F; --head:#1C2622; --head-ink:#FFFFFF;
+  --accent:#146B47; --accent-soft:#D9EEE2; --over:#B3311E; --over-soft:#FBE2DD; --hi:#F4F5F4; --alt:#FAFAFA; --line-strong:#9AA59F; --head:#1C2622; --head-ink:#FFFFFF; --ex-yes:#1E8A4C; --ex-no:#C8372D;
   --f-display:"Do Hyeon","IBM Plex Sans KR",system-ui,sans-serif;
   --f-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-num:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -24,10 +24,10 @@
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0B0F0D; --surface:#151B18; --ink:#F1F4F2; --muted:#B4BEB9; --line:#2C3632;
-  --accent:#4FC390; --accent-soft:#16352A; --over:#F17A66; --over-soft:#3B1F1A; --hi:#1C2420; --alt:#19201D; --line-strong:#4A5852; --head:#26322D; --head-ink:#FFFFFF; color-scheme:dark}}
+  --accent:#4FC390; --accent-soft:#16352A; --over:#F17A66; --over-soft:#3B1F1A; --hi:#1C2420; --alt:#19201D; --line-strong:#4A5852; --head:#26322D; --head-ink:#FFFFFF; --ex-yes:#2F9E5C; --ex-no:#D44A3E; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0B0F0D; --surface:#151B18; --ink:#F1F4F2; --muted:#B4BEB9; --line:#2C3632;
-  --accent:#4FC390; --accent-soft:#16352A; --over:#F17A66; --over-soft:#3B1F1A; --hi:#1C2420; --alt:#19201D; --line-strong:#4A5852; --head:#26322D; --head-ink:#FFFFFF; color-scheme:dark}
+  --accent:#4FC390; --accent-soft:#16352A; --over:#F17A66; --over-soft:#3B1F1A; --hi:#1C2420; --alt:#19201D; --line-strong:#4A5852; --head:#26322D; --head-ink:#FFFFFF; --ex-yes:#2F9E5C; --ex-no:#D44A3E; color-scheme:dark}
 
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
@@ -285,6 +285,12 @@ body{font-size:16px}
 .noshare{font-size:14px}
 .brand p,.daytag,.weeklbl{font-size:14px;color:var(--muted)}
 .cell .dn{font-size:13px;color:var(--ink)}
+.cell .dn.exy,.cell .dn.exn{align-self:flex-start;min-width:24px;height:24px;padding:0 4px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.cell .dn.exy{background:var(--ex-yes)}
+.cell .dn.exn{background:var(--ex-no)}
+.cell.today .dn.exy,.cell.today .dn.exn{color:#fff}
+.legend .lg-ex::before{border-radius:99px;background:var(--ex-yes)}
+.legend .lg-ex.exn::before{background:var(--ex-no)}
 .cell .ck{font-size:14px}
 .legend,.wl{font-size:13px;color:var(--ink)}
 </style>
@@ -599,7 +605,7 @@ function personHTML(){
   const cal=cells.map(d=>{
     const v=dayTotal(p.id,d),g=goalFor(p.id,monday(d)),daily=g?g.v/7:0;
     const cls=["cell",d.slice(0,7)!==S.month?"out":"",v&&daily?(v>daily?"over":"ok"):"",d===today()?"today":"",d===S.date?"sel":""].join(" ");
-    return `<button class="${cls}" data-act="pick" data-date="${d}" aria-label="${longDate(d)} ${fmt(v)}kcal"><span class="dn">${parse(d).getDate()}</span><span class="ck">${v?fmt(v):""}</span></button>`;
+    return `<button class="${cls}" data-act="pick" data-date="${d}" aria-label="${longDate(d)} ${fmt(v)}kcal${exOf(p.id,d)===true?" 운동함":exOf(p.id,d)===false?" 운동 안 함":""}"><span class="dn ${exOf(p.id,d)===true?"exy":exOf(p.id,d)===false?"exn":""}">${parse(d).getDate()}</span><span class="ck">${v?fmt(v):""}</span></button>`;
   }).join("");
   const weeks=[];for(let w=gs;w<=ge;w=addDays(w,7))weeks.push(w);
   const wl=weeks.map(w=>{const t=weekTotal(p.id,w),g=goalFor(p.id,w),over=g&&t>g.v;
@@ -614,7 +620,7 @@ function personHTML(){
       <div class="panel">
         <div class="mnav"><button class="ib" data-act="month" data-n="-1" aria-label="이전 달">‹</button><h2>${y}년 ${+m}월</h2><button class="ib" data-act="month" data-n="1" aria-label="다음 달">›</button></div>
         <div class="cal">${DOW.map(d=>`<div class="dw">${d}</div>`).join("")}${cal}</div>
-        <div class="legend"><span style="--sw:var(--accent-soft)">하루 기준 이하</span><span style="--sw:var(--over-soft)">하루 기준 초과</span><span>숫자 = 그날 총 kcal</span></div>
+        <div class="legend"><span style="--sw:var(--accent-soft)">하루 기준 이하</span><span style="--sw:var(--over-soft)">하루 기준 초과</span><span>숫자 = 그날 총 kcal</span><span class="lg-ex exy">운동함</span><span class="lg-ex exn">운동 안 함</span></div>
         <div><p class="lbl">주별 합계</p><div class="wlist">${wl}</div></div>
       </div>
       <div class="panel">
