@@ -100,6 +100,7 @@ button{cursor:pointer}
 .home:hover{color:var(--accent)}
 .jb:hover{border-color:var(--ink)}
 .prow{scroll-margin-top:16px}
+.dweek{margin-top:28px;border-top:1px solid var(--line);padding-top:24px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -601,7 +602,7 @@ function dashHTML(){
       <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)} <small>달력 보기 →</small></a>
         <span class="chip">${md(S.date)} ${dowOf(S.date)} · <span class="hk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></span></div>
       <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
-      <div class="pc-c">${shareHTML("d",p.id,S.date,true)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
+      <div class="pc-c">${shareHTML("d",p.id,S.date,true)}<div class="dweek">${weekSumHTML(p.id,wk)}</div><a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
     </section>`).join("");
   return `<div class="top"><div class="brand"><h1><a class="home" href="./" data-act="reload" title="새로고침">칼로리장부</a></h1><nav class="jump" aria-label="사람별로 이동">${["jeonghwan","jaehyun","youngwoo"].map(person).filter(Boolean).concat(S.people.filter(p=>!["jeonghwan","jaehyun","youngwoo"].includes(p.id)))
       .map(p=>`<button class="jb" data-act="jump" data-pid="${p.id}"><span class="jn">${esc(p.name)}</span><span class="jk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b>kcal</span></button>`).join("")}</nav></div>
