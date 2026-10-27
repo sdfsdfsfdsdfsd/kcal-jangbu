@@ -104,7 +104,8 @@ button{cursor:pointer}
 
 .dtot .total{margin-top:0}
 .sumbox{margin-top:14px;border:1.5px solid var(--line-strong);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
-.sumbox .sr{display:flex;justify-content:flex-start;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sumbox .sr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sumbox .sr .red.wk{font-size:13px;font-weight:600}
 .sumbox .sr>span{font-weight:600;font-size:14px}
 .sumbox .red{color:var(--over);font-size:17px}
 .sumbox .mut{color:var(--muted);font-size:13px}
@@ -578,7 +579,7 @@ function sumHTML(pid,date){
   const wk=monday(date),g=goalFor(pid,wk),wt=weekTotal(pid,wk),rem=g?g.v-wt:0,note=weekNote(pid,wk);
   return `<div class="sumbox">
     <div class="sr"><span>일간 칼로리</span><b class="num red">${fmt(dayTotal(pid,date))} kcal</b></div>
-    <div class="sr"><span>주간 남은 칼로리</span>${g?`<b class="num red">${rem>=0?fmt(rem)+" kcal 남음":fmt(-rem)+" kcal 초과"}</b>`:`<span class="mut">주간 목표를 먼저 정해 주세요</span>`}</div>
+    <div class="sr"><span>주간 남은 칼로리</span>${g?`<b class="num red wk">${rem>=0?fmt(rem)+" kcal 남음":fmt(-rem)+" kcal 초과"}</b>`:`<span class="mut">주간 목표를 먼저 정해 주세요</span>`}</div>
     ${note?`<p class="scom">${note}</p>`:""}
   </div>`;
 }
