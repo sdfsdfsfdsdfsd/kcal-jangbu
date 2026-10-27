@@ -87,6 +87,8 @@ button{cursor:pointer}
 .exb:hover{border-color:var(--accent)}
 .exb.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 .exfoot{display:flex;justify-content:flex-end;gap:8px}
+.calsub{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:20px}
+.calsub .week{border-top:1px solid var(--line);padding-top:16px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -621,15 +623,14 @@ function personHTML(){
         <div class="mnav"><button class="ib" data-act="month" data-n="-1" aria-label="이전 달">‹</button><h2>${y}년 ${+m}월</h2><button class="ib" data-act="month" data-n="1" aria-label="다음 달">›</button></div>
         <div class="cal">${DOW.map(d=>`<div class="dw">${d}</div>`).join("")}${cal}</div>
         <div class="legend"><span style="--sw:var(--accent-soft)">하루 기준 이하</span><span style="--sw:var(--over-soft)">하루 기준 초과</span><span>숫자 = 그날 총 kcal</span><span class="lg-ex exy">운동함</span><span class="lg-ex exn">운동 안 함</span></div>
-        <div><p class="lbl">주별 합계</p><div class="wlist">${wl}</div></div>
+        <div class="calsub">${sparkHTML(p.id,wk)}${weekSumHTML(p.id,wk)}</div>
+        <div class="calsub"><p class="lbl">주별 합계</p><div class="wlist">${wl}</div></div>
       </div>
       <div class="panel">
         ${goalHTML("p",p.id,wk)}
         ${addHTML("p",p.id,S.date)}
         ${ledgerHTML("p",p.id,S.date)}
         ${shareHTML("p",p.id,S.date,false)}
-        ${sparkHTML(p.id,wk)}
-        ${weekSumHTML(p.id,wk)}
       </div>
     </div>`;
 }
