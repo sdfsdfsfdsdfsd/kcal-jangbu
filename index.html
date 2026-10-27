@@ -294,7 +294,24 @@ const ALIAS={"밥":["쌀밥"],"공기밥":["쌀밥"],"흰쌀밥":["쌀밥"],"백
   "계란":["달걀 삶은것","달걀 생것","달걀후라이"],"달걀":["달걀 삶은것","달걀 생것","달걀후라이"],"삶은계란":["달걀 삶은것"],"계란후라이":["달걀후라이"],
   "닭가슴살":["닭고기 가슴(껍질 제거) 삶은것","닭고기 가슴(껍질 제거) 구운것","닭고기 가슴(껍질 제거) 생것"],"닭":["닭고기 가슴(껍질 제거) 삶은것","닭고기"],
   "바나나":["바나나 생것"],"사과":["사과 생것"],"블루베리":["블루베리 생것"],"고구마":["고구마 찐것","고구마 생것"],"감자":["감자 찐것","감자 생것"],
-  "우유":["우유"],"두부":["두부"],"아몬드":["아몬드 볶은것","아몬드 말린것"],"브로콜리":["브로콜리 데친것","브로콜리 생것"],"방울토마토":["토마토 방울토마토"],"토마토":["토마토 생것"]};
+  "우유":["우유"],"두부":["두부 부침용","두부 찌개용","두부"],"김치":["배추김치","총각김치","깍두기"],"배추김치":["배추김치"],
+  "참치":["참치 통조림","참치회","다랑어"],"참치캔":["참치 통조림"],"광어":["넙치류 넙치(광어) 육 생것","넙치"],"올리브오일":["올리브유"],"올리브유":["올리브유"],
+  "감자":["감자 수미 삶은것","감자 찐감자","감자 수미 생것"],"옥수수":["옥수수 찐옥수수","옥수수 찰옥수수 생것"],"닭봉":["닭고기 날개 구운것","닭고기 날개 삶은것"],"닭날개":["닭고기 날개 구운것"],
+  "떡":["가래떡","인절미","백설기"],"만두":["고기만두","만두 고기만두"],"오트밀":["귀리 쌀귀리 도정 생것","오트밀"],"귀리":["귀리 쌀귀리 도정 생것"],
+  "삼겹살":["돼지고기 삼겹살 구운것","삼겹살구이","돼지고기 삼겹살 생것"],"목살":["돼지고기 목심 구운것","돼지고기 목심 생것"],
+  "소고기":["소고기 한우 등심 구운것","소고기 한우 등심 생것"],"치킨":["후라이드치킨","닭튀김"],"불고기":["소불고기","불고기"],"아몬드":["아몬드 볶은것","아몬드 말린것"],"브로콜리":["브로콜리 데친것","브로콜리 생것"],"방울토마토":["토마토 방울토마토"],"토마토":["토마토 생것"]};
+/* 계란 크기별 1개 무게 (껍데기 뺀 가식부, 축산물 등급 중량 기준 근사) */
+const EGG=[["소란",37,"44g 미만"],["중란",42,"44~52g"],["대란",49,"52~60g"],["특란",56,"60~68g"],["왕란",62,"68g 이상"]];
+const EGGK={"삶은":145,"날것":136,"후라이":184};
+function eggRows(q){
+  const m=q.match(/(\d+)\s*(개|알)/),n=m?Math.max(1,Math.min(30,+m[1])):1;
+  const base=q.replace(/(\d+)\s*(개|알)/,"");
+  if(!/계란|달걀|에그/.test(base))return null;
+  const kind=/후라이|프라이|부침/.test(base)?"후라이":/날|생/.test(base)?"날것":"삶은";
+  const sz=EGG.find(e=>base.includes(e[0]));
+  return (sz?[sz]:EGG).map(([nm,g,range])=>{const gg=g*n;return {name:`계란 ${nm} ${n}개 (${kind==="삶은"?"삶은것":kind})`,grams:gg,kcal:Math.round(gg*EGGK[kind]/100),per:EGGK[kind]/100,
+    unit:`${nm}(${range}) 1개 ≈ ${g}g · 껍데기 뺀 무게`,src:"egg"}});
+}
 const DB={rows:null,keys:null,state:"idle",v:""};
 function loadDB(){
   if(DB.state!=="idle")return;DB.state="loading";
@@ -585,8 +602,9 @@ function render(){
 /* ---------- 검색 ---------- */
 const norm=s=>String(s).replace(/\s/g,"").toLowerCase();
 function search(q){
-  q=String(q).replace(/날\s*것|날거/g,"생것").replace(/익힌\s*것/g,"삶은것");
-  const nq=norm(q);if(!nq)return [];
+  const eggs=eggRows(String(q));
+  q=String(q).replace(/날\s*것|날거/g,"생것").replace(/익힌\s*것/g,"삶은것").replace(/\d+\s*(개|알)/g,"").replace(/소란|중란|대란|특란|왕란/g,"").trim();
+  const nq=norm(q);if(!nq)return eggs||[];
   const toks=q.trim().toLowerCase().split(/\s+/).map(norm).filter(Boolean);
   const out=[],seen=new Set();
   for(const L of Object.values(S.logs))for(const it of (L.items||[])){
@@ -594,6 +612,7 @@ function search(q){
     if(norm(it.food).includes(nq)&&!seen.has(it.food)){seen.add(it.food);
       out.push({name:it.food,grams:it.grams||null,kcal:+it.kcal,per:it.per||(it.grams?it.kcal/it.grams:null),unit:"우리 기록"+(it.grams?` · ${fmt(it.grams)}g`:""),src:"mine"})}
   }
+  if(eggs){out.length=Math.min(out.length,1);out.push(...eggs)}
   if(DB.state!=="ready")return out;
   const qs=[{toks,nq,bonus:0},...(ALIAS[nq]||[]).map((a,ix)=>({toks:a.split(/\s+/).map(norm),nq:norm(a),bonus:-3000+ix*200,alias:1}))];
   const best=new Map();
@@ -601,7 +620,7 @@ function search(q){
     const k=DB.keys[i];if(!Q.toks.every(t=>k.includes(t)))continue;
     const r=DB.rows[i],nm=norm(r[0]);
     let sc=(nm===Q.nq?0:nm.startsWith(Q.nq)?1:nm.includes(Q.nq)?2:4)*1000+Q.bonus;
-    sc+=r[6]==="D"?0:r[6]==="R"?(Q.alias?0:150):(Q.toks.some(t=>norm(r[1]).includes(t))?0:300);
+    sc+=r[6]==="D"?0:r[6]==="R"?(Q.alias?0:150):(Q.toks.some(t=>norm(r[1]).includes(t))?0:r[6]==="P"?250:300);
     if(r[6]==="R"){const w=r[0].split(" ");
       const w0=norm(w[0]);if(w0===Q.toks[0]||w0===Q.toks[0]+"류")sc-=1500;
       if(/생것/.test(r[0]))sc-=60;if(/개량종|대표|평균/.test(r[0]))sc-=40;}
