@@ -158,6 +158,7 @@ button{cursor:pointer}
 .sugg .sn{min-width:0;overflow-wrap:anywhere}
 .sugg .su{color:var(--muted);font-size:12px;display:block}
 .sugg .sk{font-family:var(--f-num);font-size:13px}
+.dbnote{font-size:11px;color:var(--muted);padding:4px 8px 6px}
 .sugg .ai{border-top:1px solid var(--line);margin-top:4px;color:var(--accent);font-weight:600;grid-template-columns:1fr}
 .hint{font-size:12px;color:var(--muted);margin:6px 0 0;min-height:1em}
 
@@ -285,32 +286,23 @@ body{font-size:16px}
 
 <script>
 /* ---------- 음식 사전: [이름, 기준, g, kcal] (대략값) ---------- */
-const FOODS=[
-["쌀밥","1공기",210,310],["현미밥","1공기",210,300],["잡곡밥","1공기",210,305],["햇반","1개",210,315],["김밥","1줄",230,480],["참치김밥","1줄",250,550],
-["볶음밥","1인분",350,650],["김치볶음밥","1인분",350,620],["비빔밥","1그릇",450,600],["오므라이스","1인분",400,700],["카레라이스","1인분",450,700],
-["제육덮밥","1인분",450,780],["치킨마요덮밥","1인분",400,750],["돈까스","1인분",250,680],["주먹밥","1개",110,200],["삼각김밥","1개",110,190],["초밥","10피스",300,450],
-["라면","1봉(조리)",500,500],["짜장면","1그릇",650,800],["짬뽕","1그릇",900,690],["칼국수","1그릇",700,600],["물냉면","1그릇",800,550],["비빔냉면","1그릇",550,600],
-["우동","1그릇",600,450],["잔치국수","1그릇",600,450],["쫄면","1그릇",400,560],["토마토 파스타","1인분",350,580],["크림 파스타","1인분",350,800],["쌀국수","1그릇",650,450],
-["김치찌개","1인분",400,230],["된장찌개","1인분",400,180],["순두부찌개","1인분",400,300],["부대찌개","1인분",500,500],["미역국","1그릇",300,120],
-["갈비탕","1그릇",700,450],["설렁탕","1그릇",700,400],["삼계탕","1그릇",1000,900],["육개장","1그릇",600,350],["감자탕","1인분",600,650],
-["삼겹살","200g",200,660],["목살","200g",200,550],["소고기 등심","200g",200,500],["닭가슴살","100g",100,110],["닭가슴살 소시지","1개",70,90],
-["프라이드치킨","1조각",100,290],["양념치킨","1조각",100,330],["족발","200g",200,450],["보쌈","200g",200,500],["불고기","200g",200,380],
-["제육볶음","200g",200,420],["닭갈비","1인분",300,500],["떡갈비","1개",100,250],["훈제오리","100g",100,300],["스테이크","200g",200,500],
-["떡볶이","1인분",300,480],["순대","1인분",200,360],["모듬튀김","1인분",150,450],["어묵꼬치","1개",60,70],["만두","5개",150,330],["라볶이","1인분",400,600],["핫도그","1개",130,350],
-["햄버거","1개",230,550],["치즈버거","1개",120,300],["감자튀김","M",115,340],["피자","1조각",120,300],["샌드위치","1개",220,450],["토스트","1개",200,450],
-["계란","1개",50,75],["삶은계란","1개",50,75],["계란후라이","1개",55,95],["우유","200ml",200,130],["저지방우유","200ml",200,90],["그릭요거트","100g",100,100],
-["떠먹는 요거트","1개",85,85],["슬라이스 치즈","1장",20,60],["두유","1팩",190,120],["프로틴 쉐이크","1스쿱",30,120],
-["바나나","1개",120,105],["사과","1개",250,130],["귤","1개",100,40],["딸기","10알",150,50],["포도","1송이",300,180],["수박","1조각",300,90],
-["블루베리","100g",100,57],["방울토마토","10개",150,30],["고구마","1개",150,190],["감자","1개",150,110],["옥수수","1개",150,160],["아보카도","1개",150,240],
-["샐러드(드레싱 X)","1접시",150,40],["닭가슴살 샐러드","1인분",300,300],["리코타 샐러드","1인분",250,350],["김치","1접시",50,15],["두부","반 모",150,120],
-["계란말이","1인분",100,150],["멸치볶음","1접시",30,90],["조미김","1봉",5,25],["시금치나물","1접시",70,40],
-["식빵","1장",35,95],["베이글","1개",110,290],["크루아상","1개",60,250],["단팥빵","1개",100,280],["도넛","1개",70,270],["케이크","1조각",100,330],
-["쿠키","1개",25,120],["초콜릿","1개",30,160],["감자칩","1봉",60,330],["아이스크림","1개",100,200],["견과류","한 줌",25,150],["프로틴바","1개",60,200],
-["떡","100g",100,220],["붕어빵","1개",60,150],["호떡","1개",100,230],
-["아메리카노","1잔",355,10],["카페라떼","1잔",355,190],["바닐라라떼","1잔",355,250],["콜라","1캔",355,150],["제로콜라","1캔",355,0],
-["맥주","500cc",500,230],["소주","1병",360,400],["막걸리","1병",750,350],["와인","1잔",150,125],["오렌지주스","1컵",200,90],["버블티","1잔",500,450],
-["스무디","1잔",400,300],["이온음료","1병",500,120]
-];
+/* 식약처 전국통합식품영양성분정보 (foods.json): [이름, 업체, 기준량당kcal, 단위, 1회제공량, 대분류, 출처 F/D/R] */
+const PORTION={"밥류":210,"죽 및 스프류":300,"국 및 탕류":400,"찌개 및 전골류":300,"면 및 만두류":450,"볶음류":150,"구이류":150,"튀김류":150,
+  "조림류":100,"찜류":200,"전·적 및 부침류":150,"나물·숙채류":70,"생채·무침류":70,"김치류":50,"장아찌·절임류":30,"젓갈류":20,
+  "빵 및 과자류":100,"음료 및 차류":200,"유제품류 및 빙과류":200,"수·조·어·육류":100,"곡류, 서류 제품":100,"양념류":15,"장류":15};
+const ALIAS={"밥":["쌀밥"],"공기밥":["쌀밥"],"흰쌀밥":["쌀밥"],"백미밥":["쌀밥"],"흰밥":["쌀밥"],"현미밥":["멥쌀밥 현미"],
+  "계란":["달걀 삶은것","달걀 생것","달걀후라이"],"달걀":["달걀 삶은것","달걀 생것","달걀후라이"],"삶은계란":["달걀 삶은것"],"계란후라이":["달걀후라이"],
+  "닭가슴살":["닭고기 가슴(껍질 제거) 삶은것","닭고기 가슴(껍질 제거) 구운것","닭고기 가슴(껍질 제거) 생것"],"닭":["닭고기 가슴(껍질 제거) 삶은것","닭고기"],
+  "바나나":["바나나 생것"],"사과":["사과 생것"],"블루베리":["블루베리 생것"],"고구마":["고구마 찐것","고구마 생것"],"감자":["감자 찐것","감자 생것"],
+  "우유":["우유"],"두부":["두부"],"아몬드":["아몬드 볶은것","아몬드 말린것"],"브로콜리":["브로콜리 데친것","브로콜리 생것"],"방울토마토":["토마토 방울토마토"],"토마토":["토마토 생것"]};
+const DB={rows:null,keys:null,state:"idle",v:""};
+function loadDB(){
+  if(DB.state!=="idle")return;DB.state="loading";
+  fetch("foods.json",{cache:"force-cache"}).then(r=>{if(!r.ok)throw 0;return r.json()}).then(j=>{
+    DB.rows=j.d;DB.v=j.v||"";DB.keys=j.d.map(r=>norm(r[0]+r[1]));DB.state="ready";
+    if(S.sugg){const p=S.sugg.p;openSugg(p)}
+  }).catch(()=>{DB.state="error"});
+}
 
 /* ---------- 날짜 ---------- */
 const pad=n=>String(n).padStart(2,"0");
@@ -594,21 +586,42 @@ function render(){
 const norm=s=>String(s).replace(/\s/g,"").toLowerCase();
 function search(q){
   const nq=norm(q);if(!nq)return [];
+  const toks=q.trim().toLowerCase().split(/\s+/).map(norm).filter(Boolean);
   const out=[],seen=new Set();
   for(const L of Object.values(S.logs))for(const it of (L.items||[])){
     if(out.length>=3)break;
-    if(norm(it.food).includes(nq)&&!seen.has(it.food)){seen.add(it.food);out.push({name:it.food,grams:it.grams||null,kcal:+it.kcal,unit:"우리 기록"+(it.grams?` · ${fmt(it.grams)}g`:"")})}
+    if(norm(it.food).includes(nq)&&!seen.has(it.food)){seen.add(it.food);
+      out.push({name:it.food,grams:it.grams||null,kcal:+it.kcal,per:it.per||(it.grams?it.kcal/it.grams:null),unit:"우리 기록"+(it.grams?` · ${fmt(it.grams)}g`:""),src:"mine"})}
   }
-  const hits=FOODS.filter(f=>norm(f[0]).includes(nq)&&!seen.has(f[0]))
-    .sort((a,b)=>norm(a[0]).indexOf(nq)-norm(b[0]).indexOf(nq)||a[0].length-b[0].length).slice(0,8-out.length);
-  hits.forEach(f=>out.push({name:f[0],grams:f[2],kcal:f[3],unit:`${f[1]} · ${fmt(f[2])}g`}));
+  if(DB.state!=="ready")return out;
+  const qs=[{toks,nq,bonus:0},...(ALIAS[nq]||[]).map((a,ix)=>({toks:a.split(/\s+/).map(norm),nq:norm(a),bonus:-3000+ix*200,alias:1}))];
+  const best=new Map();
+  for(const Q of qs)for(let i=0;i<DB.rows.length;i++){
+    const k=DB.keys[i];if(!Q.toks.every(t=>k.includes(t)))continue;
+    const r=DB.rows[i],nm=norm(r[0]);
+    let sc=(nm===Q.nq?0:nm.startsWith(Q.nq)?1:nm.includes(Q.nq)?2:4)*1000+Q.bonus;
+    sc+=r[6]==="D"?0:r[6]==="R"?(Q.alias?0:150):(Q.toks.some(t=>norm(r[1]).includes(t))?0:300);
+    sc+=Math.min(r[0].length,80);
+    if(!best.has(i)||best.get(i)>sc)best.set(i,sc);
+  }
+  const hits=[...best].map(([i,sc])=>[sc,i]).sort((a,b)=>a[0]-b[0]);
+  const dup=new Set(out.map(o=>o.name));
+  for(const [,i] of hits){
+    if(out.length>=12)break;
+    const [name,brand,k100,unit,size,cat,src]=DB.rows[i];
+    const nmKey=brand?`${brand} ${name}`:name;if(dup.has(nmKey))continue;dup.add(nmKey);
+    const per=k100/100,g=size||PORTION[cat]||100;
+    out.push({name:brand?`${brand} ${name}`:name,grams:g,kcal:Math.round(g*per),per,
+      unit:(brand?brand+" · ":"")+(size?`1회 ${fmt(size)}${unit} 기준`:`100${unit}당 ${fmt(k100)}kcal · 기본 ${fmt(g)}${unit}`),src});
+  }
   return out;
 }
 function drawSugg(p){
   const box=document.getElementById(p+"-sugg");if(!box)return;
   const s=S.sugg;
-  if(!s||s.p!==p||(!s.list.length&&!s.ai)){box.hidden=true;box.innerHTML="";return}
-  box.innerHTML=s.list.map((it,i)=>`<button type="button" class="${i===s.idx?"on":""}" data-act="sugg" data-p="${p}" data-i="${i}">
+  if(!s||s.p!==p||(!s.list.length&&!s.ai&&DB.state!=="loading")){box.hidden=true;box.innerHTML="";return}
+  const note=DB.state==="loading"?`<div class="dbnote">식약처 음식 DB 불러오는 중…</div>`:DB.state==="ready"?`<div class="dbnote">식약처 식품영양성분 DB 기준${DB.v?" · "+DB.v:""}</div>`:"";
+  box.innerHTML=(s.list.length||DB.state==="loading"?note:"")+s.list.map((it,i)=>`<button type="button" class="${i===s.idx?"on":""}" data-act="sugg" data-p="${p}" data-i="${i}">
       <span class="sn">${esc(it.name)}<span class="su">${esc(it.unit)}</span></span><span class="sk">${fmt(it.kcal)} kcal</span></button>`).join("")
     +(s.ai?`<button type="button" class="ai ${s.idx===s.list.length?"on":""}" data-act="ai" data-p="${p}">AI로 칼로리 추정: “${esc(s.q)}”</button>`:"");
   box.hidden=false;
@@ -621,8 +634,8 @@ function openSugg(p){
 function pickSugg(p,i){
   const it=S.sugg&&S.sugg.list[i];if(!it)return;
   const d=draft(p);
-  d.food=it.name;d.grams=it.grams?String(it.grams):"";d.kcal=String(it.kcal);d.per=it.grams?it.kcal/it.grams:null;
-  d.hint=it.grams?`${it.unit} 기준 ${fmt(it.kcal)} kcal · 그램을 바꾸면 칼로리가 같이 바뀌어요`:`${fmt(it.kcal)} kcal`;
+  d.food=it.name;d.grams=it.grams?String(it.grams):"";d.kcal=String(it.kcal);d.per=it.per||(it.grams?it.kcal/it.grams:null);
+  d.hint=it.grams?`${it.unit} → ${fmt(it.grams)}g ${fmt(it.kcal)}kcal · 실제 먹은 g으로 바꾸면 칼로리가 자동 계산돼요`:`${fmt(it.kcal)} kcal`;
   S.sugg=null;setVals(p);
   const g=document.getElementById(p+"-g");if(g){g.focus();g.select()}
 }
@@ -741,7 +754,7 @@ document.addEventListener("input",e=>{
   if(S.editing&&f==="etime"){S.editing.time=tv;return}
   if(f==="food"||f==="g"||f==="kcal"){
     const p=el.dataset.p,d=draft(p);
-    if(f==="food"){if(el.value!==d.food){d.food=el.value;d.per=null}openSugg(p)}
+    if(f==="food"){loadDB();if(el.value!==d.food){d.food=el.value;d.per=null}openSugg(p)}
     if(f==="g"){d.grams=el.value;const g=Number(el.value);
       if(d.per&&isFinite(g)&&g>0){d.kcal=String(Math.round(g*d.per));const k=document.getElementById(p+"-kcal");if(k)k.value=d.kcal}}
     if(f==="kcal")d.kcal=el.value;
@@ -773,6 +786,8 @@ document.addEventListener("focusout",e=>{
   if(e.target.dataset&&e.target.dataset.f==="food"&&S.sugg&&S.sugg.p===e.target.dataset.p){S.sugg=null;drawSugg(e.target.dataset.p)}
 });
 window.addEventListener("hashchange",go);
+document.addEventListener("focusin",e=>{if(e.target.dataset&&e.target.dataset.f==="food")loadDB()});
+setTimeout(loadDB,1500);
 
 /* ---------- 시작 ---------- */
 (function(){
