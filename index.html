@@ -607,7 +607,7 @@ function personHTML(){
   const cal=cells.map(d=>{
     const v=dayTotal(p.id,d),g=goalFor(p.id,monday(d)),daily=g?g.v/7:0;
     const cls=["cell",d.slice(0,7)!==S.month?"out":"",v&&daily?(v>daily?"over":"ok"):"",d===today()?"today":"",d===S.date?"sel":""].join(" ");
-    return `<button class="${cls}" data-act="pick" data-date="${d}" aria-label="${longDate(d)} ${fmt(v)}kcal${exOf(p.id,d)===true?" 운동함":exOf(p.id,d)===false?" 운동 안 함":""}"><span class="dn ${exOf(p.id,d)===true?"exy":exOf(p.id,d)===false?"exn":""}">${parse(d).getDate()}</span><span class="ck">${v?fmt(v):""}</span></button>`;
+    return `<button class="${cls}" data-act="pick" data-date="${d}" aria-label="${longDate(d)} ${fmt(v)}kcal${exOf(p.id,d)===true?" 운동함":exOf(p.id,d)===false?" 운동 안 함":""}"><span class="dn ${exOf(p.id,d)===false?"exn":""}">${parse(d).getDate()}</span><span class="ck">${v?fmt(v):""}</span></button>`;
   }).join("");
   const weeks=[];for(let w=gs;w<=ge;w=addDays(w,7))weeks.push(w);
   const wl=weeks.map(w=>{const t=weekTotal(p.id,w),g=goalFor(p.id,w),over=g&&t>g.v;
@@ -622,7 +622,7 @@ function personHTML(){
       <div class="panel">
         <div class="mnav"><button class="ib" data-act="month" data-n="-1" aria-label="이전 달">‹</button><h2>${y}년 ${+m}월</h2><button class="ib" data-act="month" data-n="1" aria-label="다음 달">›</button></div>
         <div class="cal">${DOW.map(d=>`<div class="dw">${d}</div>`).join("")}${cal}</div>
-        <div class="legend"><span style="--sw:var(--accent-soft)">하루 기준 이하</span><span style="--sw:var(--over-soft)">하루 기준 초과</span><span>숫자 = 그날 총 kcal</span><span class="lg-ex exy">운동함</span><span class="lg-ex exn">운동 안 함</span></div>
+        <div class="legend"><span style="--sw:var(--accent-soft)">하루 기준 이하</span><span style="--sw:var(--over-soft)">하루 기준 초과</span><span>숫자 = 그날 총 kcal</span><span class="lg-ex exn">운동 안 한 날</span></div>
         <div class="calsub">${sparkHTML(p.id,wk)}${weekSumHTML(p.id,wk)}</div>
         <div class="calsub"><p class="lbl">주별 합계</p><div class="wlist">${wl}</div></div>
       </div>
