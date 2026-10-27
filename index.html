@@ -249,7 +249,9 @@ body{font-size:16px}
 .hint{font-size:13px}
 .total .t{font-size:15px}
 .total .v{font-size:26px}
-.dayvs{font-size:14px;color:var(--muted);font-weight:500}
+.dayvs{font-size:14px;color:var(--over);font-weight:700}
+.total .v,.total .t{color:var(--over)}
+.wnums .rem,.wnums .rem.over{color:var(--over)}
 .dayvs.over{color:var(--over)}
 .goal .gv{font-size:15px}
 .goal .gv b{font-size:20px}
@@ -360,14 +362,19 @@ const draft=p=>S.drafts[p]||(S.drafts[p]={time:nowHM(),food:"",grams:"",kcal:"",
 const sorted=list=>list.map((it,i)=>[it,i]).sort((a,b)=>(a[0].time||"99:99").localeCompare(b[0].time||"99:99")||a[1]-b[1]).map(x=>x[0]);
 function groups(list){const out=[];for(const it of sorted(list)){const t=it.time||"";const g=out[out.length-1];if(g&&g.t===t)g.items.push(it);else out.push({t,items:[it]})}return out}
 const itemLine=it=>[it.food,it.grams?fmt(it.grams)+"g":null,`(${fmt(it.kcal)}kcal)`].filter(Boolean).join(" - ");
-function dayText(pid,date){
-  const list=items(pid,date);if(!list.length)return "";
+const isoDay=d=>`${d}(${dowOf(d)})`;
+function personText(pid,date){
+  const list=items(pid,date),name=person(pid)?.name||"";
+  if(!list.length)return `${name}식단\n\n기록 없음`;
   const body=groups(list).map(g=>(g.t?`[${g.t}]\n`:"")+g.items.map(itemLine).join("\n")).join("\n\n");
-  return body+"\n\n토탈 - "+fmt(dayTotal(pid,date))+"kcal";
+  return `${name}식단\n\n${body}\n\n토탈 - ${fmt(dayTotal(pid,date))}kcal`;
+}
+function dayText(pid,date){
+  if(!items(pid,date).length)return "";
+  return isoDay(date)+"\n\n"+personText(pid,date);
 }
 function allText(date){
-  const head=`📋 ${longDate(date)} 칼로리 정산`;
-  return [head,...S.people.map(p=>`■ ${p.name}\n`+(dayText(p.id,date)||"기록 없음"))].join("\n\n");
+  return isoDay(date)+"\n\n"+S.people.map(p=>personText(p.id,date)).join("\n\n\n");
 }
 async function copyText(txt,preId){
   try{await navigator.clipboard.writeText(txt);toast("복사했어요. 톡방에 붙여넣기 하세요.")}
