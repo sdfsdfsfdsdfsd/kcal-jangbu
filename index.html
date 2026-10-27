@@ -367,9 +367,9 @@ const itemLine=it=>[it.food,it.grams?fmt(it.grams)+"g":null,`(${fmt(it.kcal)}kca
 const isoDay=d=>`${d}(${dowOf(d)})`;
 function personText(pid,date){
   const list=items(pid,date),name=person(pid)?.name||"";
-  if(!list.length)return `${name}식단\n\n기록 없음`;
+  if(!list.length)return `* ${name}식단\n\n기록 없음`;
   const body=groups(list).map(g=>(g.t?`[${g.t}]\n`:"")+g.items.map(itemLine).join("\n")).join("\n\n");
-  return `${name}식단\n\n${body}\n\n토탈 - ${fmt(dayTotal(pid,date))}kcal`;
+  return `* ${name}식단\n\n${body}\n\n==========\n\n토탈 - ${fmt(dayTotal(pid,date))}kcal`;
 }
 function dayText(pid,date){
   if(!items(pid,date).length)return "";
