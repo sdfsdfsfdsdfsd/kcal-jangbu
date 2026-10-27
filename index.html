@@ -89,11 +89,13 @@ button{cursor:pointer}
 .exfoot{display:flex;justify-content:flex-end;gap:8px}
 .calsub{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:20px}
 .calsub .week{border-top:1px solid var(--line);padding-top:16px}
-.jump{display:flex;flex-direction:column;gap:8px;margin-top:12px;width:min(360px,100%)}
-.jb{min-height:48px;padding:0 16px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left}
-.jb .jn{font-weight:700;font-size:18px}
-.jb .jk{font-size:13px;color:var(--muted);white-space:nowrap}
-.jb .jk b{font-size:17px;color:var(--over);font-weight:700}
+.jump{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px;width:min(420px,100%)}
+.jb{min-height:46px;padding:0 8px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;white-space:nowrap}
+.jb .jn{font-weight:700;font-size:16px}
+.jb .jk{font-size:12px;color:var(--over);font-weight:600}
+.jb .jk b{font-size:14px;font-weight:700}
+.home{color:inherit;text-decoration:none}
+.home:hover{color:var(--accent)}
 .jb:hover{border-color:var(--ink)}
 .prow{scroll-margin-top:16px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
@@ -599,8 +601,8 @@ function dashHTML(){
       <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
       <div class="pc-c">${shareHTML("d",p.id,S.date,true)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
     </section>`).join("");
-  return `<div class="top"><div class="brand"><h1>칼로리장부</h1><nav class="jump" aria-label="사람별로 이동">${["jeonghwan","jaehyun","youngwoo"].map(person).filter(Boolean).concat(S.people.filter(p=>!["jeonghwan","jaehyun","youngwoo"].includes(p.id)))
-      .map(p=>`<button class="jb" data-act="jump" data-pid="${p.id}"><span class="jn">${esc(p.name)}</span><span class="jk">${S.date===today()?"오늘":md(S.date)} 먹은 칼로리 <b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></button>`).join("")}</nav></div>
+  return `<div class="top"><div class="brand"><h1><a class="home" href="./" data-act="reload" title="새로고침">칼로리장부</a></h1><nav class="jump" aria-label="사람별로 이동">${["jeonghwan","jaehyun","youngwoo"].map(person).filter(Boolean).concat(S.people.filter(p=>!["jeonghwan","jaehyun","youngwoo"].includes(p.id)))
+      .map(p=>`<button class="jb" data-act="jump" data-pid="${p.id}"><span class="jn">${esc(p.name)}</span><span class="jk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b>kcal</span></button>`).join("")}</nav></div>
     <div class="datebar"><button class="ib" data-act="day" data-n="-1" aria-label="전날">‹</button><span class="cur">${longDate(S.date)}</span>
       <button class="ib" data-act="day" data-n="1" aria-label="다음날">›</button>${S.date!==today()?`<button class="ib ghost" data-act="today">오늘</button>`:""}
       <button class="btn" data-act="copyall" data-date="${S.date}">세 명 일일표 한번에 복사</button></div></div>
@@ -801,6 +803,7 @@ document.addEventListener("click",e=>{
   if(a==="tab"){const i=+b.dataset.i,cs=document.getElementById("cards"),c=cs&&cs.children[i];
     if(c){cs.scrollTo({left:c.offsetLeft-cs.offsetLeft,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
     S.cardIdx=i;document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("on",j===i));return}
+  if(a==="reload"){e.preventDefault();location.reload();return}
   if(a==="jump"){const el=document.getElementById("row-"+pid);if(el)el.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
   if(a==="copy")return openEx([pid],date,b.dataset.pre);
   if(a==="copyall")return openEx(S.people.map(p=>p.id),date,null);
