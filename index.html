@@ -113,6 +113,24 @@ button{cursor:pointer}
 .dbar{margin:10px 0 6px}
 .prow>div>.sec+.sec.dtot,.panel>.sec+.sec.dtot{border-top:0;margin-top:22px;padding-top:0}
 .hint:empty{display:none}
+.bulk{display:flex;flex-direction:column;gap:8px}
+.bulkbtn{align-self:flex-start;height:40px;padding:0 14px;border-radius:8px;border:1.5px dashed var(--line-strong);background:var(--surface);font-weight:700;font-size:14px;color:var(--ink)}
+.bulkbtn.on,.bulkbtn:hover{border-style:solid;border-color:var(--accent);color:var(--accent)}
+.bulkbox{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--hi)}
+.add.stack .bulkta,.bulkta{height:176px;min-height:176px;padding:10px 12px;line-height:1.55;font-size:15px;resize:vertical;overflow:auto;font-family:var(--f-body);white-space:pre}
+.bulkhelp{margin:0;font-size:13px;color:var(--muted)}
+.bulkprev{max-height:260px;overflow:auto}
+.bulktab{width:100%;border-collapse:collapse;font-size:13px;background:var(--surface)}
+.bulktab th{text-align:left;font-size:11px;color:var(--muted);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line-strong);position:sticky;top:0;background:var(--surface)}
+.bulktab td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.bulktab td.num,.bulktab th:nth-child(n+3){text-align:right;white-space:nowrap}
+.bulktab tr.miss td{color:var(--muted)}
+.bulktab .tag{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:1px 5px;white-space:nowrap}
+.bulktab .tag.warn{color:var(--over);background:var(--over-soft)}
+.bulksum{margin:6px 0 0;font-size:13px}
+.bulksum b{color:var(--over)}
+.warnt{color:var(--over)}
+.toast .undo{margin-left:10px;border:0;background:var(--surface);color:var(--ink);border-radius:6px;padding:4px 10px;font-weight:700;font-size:13px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -586,6 +604,90 @@ function sumHTML(pid,date){
     ${note?`<p class="scom">${note}</p>`:""}
   </div>`;
 }
+/* ---------- 일괄등록 ---------- */
+const BULK={};
+function bulkHTML(ctx,pid,date){
+  const p=`${ctx}-${pid}`,b=BULK[p]||{};
+  return `<div class="bulk">
+    <button type="button" class="bulkbtn ${b.open?"on":""}" data-act="bulk-toggle" data-p="${p}" aria-expanded="${!!b.open}">일괄등록 ${b.open?"▲":"▼"}</button>
+    ${b.open?`<div class="bulkbox">
+      <textarea class="in bulkta" id="${p}-bulk" data-f="bulk" data-p="${p}" placeholder="한 줄에 음식 하나씩 붙여넣기&#10;&#10;12:30&#10;밥 300          ← 숫자 1개 = 칼로리&#10;밥 210 305      ← 숫자 2개 = 그람, 칼로리&#10;닭가슴살 100g   ← g만 있으면 칼로리 자동 계산&#10;계란 2개 150">${esc(b.text||"")}</textarea>
+      <div class="bulkprev" id="${p}-bulkprev">${bulkPrevHTML(p)}</div>
+      <button type="button" class="btn" data-act="bulk-add" data-ctx="${ctx}" data-pid="${pid}" data-date="${date}" data-p="${p}">일괄 추가</button>
+    </div>`:""}
+  </div>`;
+}
+const COUNT_UNIT="개|알|스쿱|잔|공기|조각|장|봉지|봉|컵|인분|줄|쪽|캔|병|팩|큰술|작은술|숟가락|스푼";
+function parseBulk(text,defTime){
+  const out=[];let cur=defTime;
+  const fix=t=>t.replace(/(\d{1,2})\s*[:：]\s*(\d{2})/,(m,h,mm)=>pad(Math.min(23,+h))+":"+mm);
+  for(let raw of String(text).split(/\r?\n/)){
+    let line=raw.trim();if(!line)continue;
+    if(/^[=＝\-─_~]+/.test(line)||/(총합|토탈|합계|총\s*\d)/.test(line))continue;
+    const tm=line.match(/^\[?\s*(오전|오후)?\s*(\d{1,2})\s*[:：시]\s*(\d{1,2})?\s*분?\s*\]?\s*/);
+    if(tm&&(line.includes(":")||line.includes("：")||/시/.test(tm[0]))&&!/^\d{1,2}\s*[:：]\s*\d{3}/.test(line)){
+      let h=+tm[2];if(tm[1]==="오후"&&h<12)h+=12;if(tm[1]==="오전"&&h===12)h=0;
+      cur=pad(Math.min(23,h))+":"+pad(Math.min(59,+(tm[3]||0)));
+      line=line.slice(tm[0].length).trim();if(!line)continue;
+    }
+    // 한 줄에 '이름 숫자칼' 이 여러 번 → 나눔 (예: 밥 225칼 닭 110칼)
+    const segs=[];const re=/\d+(?:\.\d+)?\s*(?:kcal|킬로칼로리|칼로리|칼)(?![a-z가-힣])\)?/gi;let m,last=0,hits=[];
+    while((m=re.exec(line)))hits.push(m.index+m[0].length);
+    if(hits.length>=2){for(const end of hits){const seg=line.slice(last,end).trim();if(seg)segs.push(seg);last=end}
+      const rest=line.slice(last).trim();if(rest&&segs.length)segs[segs.length-1]+=" "+rest;}
+    else segs.push(line);
+    for(const seg of segs){const it=parseOne(seg);if(it){it.time=cur;out.push(it)}}
+  }
+  return out;
+}
+function parseOne(seg){
+  let t=seg.replace(/[,，]/g,"").replace(/\s+/g," ").trim(),kcal=null,grams=null;
+  const nm=[];
+  // 괄호 안 숫자 = 칼로리
+  t=t.replace(/[\(（]\s*(\d+(?:\.\d+)?)\s*(?:kcal|킬로칼로리|칼로리|칼)?\s*[\)）]/gi,(m0,n)=>{if(kcal==null)kcal=+n;return " "});
+  // '+'로 묶인 재료 표기는 이름으로 둠 (올리브오일5g+계란5개)
+  t=t.replace(/[^\s]*\+[^\s]*/g,m0=>{nm.push(m0);return " @"+(nm.length-1)+"@ "});
+  // 개수 단위는 이름으로 둠
+  t=t.replace(new RegExp("(\\d+(?:\\.\\d+)?)\\s*("+COUNT_UNIT+")","g"),m0=>{nm.push(m0.replace(/\s+/g,""));return " @"+(nm.length-1)+"@ "});
+  t=t.replace(/(\d+(?:\.\d+)?)\s*(?:kcal|킬로칼로리|칼로리|칼)(?![a-z가-힣])/gi,(m0,n)=>{if(kcal==null)kcal=+n;return " "});
+  t=t.replace(/(\d+(?:\.\d+)?)\s*(?:g|그램|그람)(?![a-z])/gi,(m0,n)=>{if(grams==null)grams=+n;return " "});
+  const bare=[];
+  t=t.replace(/(^|\s|[가-힣a-zA-Z])(\d+(?:\.\d+)?)(?=\s|$)/g,(m0,pre,n)=>{bare.push(+n);return pre+" "});
+  if(bare.length===1){if(kcal==null)kcal=bare[0];else if(grams==null)grams=bare[0]}
+  else if(bare.length>=2){if(grams==null&&kcal==null){grams=bare[0];kcal=bare[1]}else if(kcal==null)kcal=bare[bare.length-1];else if(grams==null)grams=bare[0]}
+  let name=t.replace(/@(\d+)@/g,(m0,i)=>nm[+i]).replace(/[-=:~·]+\s*$/,"").replace(/^\s*[-=*·•]+/,"").replace(/\s+/g," ").trim();
+  if(!name)return null;
+  let src="입력";
+  if(kcal==null){
+    const r=search(name).find(x=>x.src!=="egg");
+    if(r){const per=r.per||(r.grams?r.kcal/r.grams:null);
+      if(grams&&per){kcal=Math.round(grams*per)}else{kcal=r.kcal;grams=grams||r.grams||null}
+      src="DB"}
+    else src="없음";
+  }
+  return {food:name,grams:grams||null,kcal:kcal==null?null:Math.round(kcal),src};
+}
+function bulkPrevHTML(p){
+  const b=BULK[p];if(!b||!String(b.text||"").trim())return `<p class="bulkhelp">붙여넣으면 여기서 어떻게 들어갈지 바로 보여줘요.</p>`;
+  const list=parseBulk(b.text,draft(p).time);
+  if(!list.length)return `<p class="bulkhelp">읽을 수 있는 음식 줄이 없어요.</p>`;
+  const tot=list.reduce((a,x)=>a+(x.kcal||0),0),miss=list.filter(x=>x.kcal==null).length;
+  return `<table class="bulktab"><thead><tr><th>시간</th><th>음식</th><th>g</th><th>kcal</th></tr></thead><tbody>${list.map(x=>`<tr class="${x.kcal==null?"miss":""}">
+    <td class="num">${x.time||""}</td><td>${esc(x.food)}${x.src==="DB"?` <span class="tag">DB 계산</span>`:x.src==="없음"?` <span class="tag warn">칼로리 없음</span>`:""}</td>
+    <td class="num">${x.grams?fmt(x.grams):"–"}</td><td class="num">${x.kcal==null?"?":fmt(x.kcal)}</td></tr>`).join("")}</tbody></table>
+    <p class="bulksum">${list.length}개 · 합계 <b>${fmt(tot)} kcal</b>${miss?` · <span class="warnt">${miss}개는 칼로리를 못 찾아서 빠져요</span>`:""}</p>`;
+}
+function bulkAdd(ctx,pid,date,p){
+  const b=BULK[p];if(!b)return;
+  const list=parseBulk(b.text,draft(p).time).filter(x=>x.kcal!=null);
+  if(!list.length){toast("추가할 음식이 없어요. 칼로리나 그람을 숫자로 적어 주세요.");return}
+  const added=list.map(x=>({id:uid(),time:x.time||"",food:x.food,grams:x.grams,kcal:x.kcal,per:x.grams?x.kcal/x.grams:null}));
+  setItems(pid,date,[...items(pid,date),...added]);
+  BULK[p]={open:false,text:""};S.undo={pid,date,ids:added.map(a=>a.id)};render();
+  toastUndo(`${added.length}개 추가했어요 · ${fmt(added.reduce((a,x)=>a+x.kcal,0))} kcal`);
+}
+let tu;function toastUndo(m){const t=document.getElementById("toast");t.innerHTML=`${esc(m)} <button class="undo" data-act="undo">되돌리기</button>`;t.hidden=false;clearTimeout(tt);clearTimeout(tu);tu=setTimeout(()=>{t.hidden=true;S.undo=null},7000)}
+
 function addHTML(ctx,pid,date){
   const p=`${ctx}-${pid}`,d=draft(p);
   return `<div class="sec"><p class="lbl">음식 입력</p>
@@ -595,6 +697,7 @@ function addHTML(ctx,pid,date){
         <div class="sugg" id="${p}-sugg" hidden></div></div>
       <label class="fl" for="${p}-g"><span>양 (g, 선택)</span><input class="in num" id="${p}-g" data-f="g" data-p="${p}" inputmode="decimal" placeholder="생략 가능" value="${esc(d.grams)}"></label>
       <label class="fl" for="${p}-kcal"><span>칼로리 (kcal)</span><input class="in num" id="${p}-kcal" data-f="kcal" data-p="${p}" inputmode="numeric" placeholder="검색하면 자동 입력" value="${esc(d.kcal)}"></label>
+      ${bulkHTML(ctx,pid,date)}
       <button class="btn" data-act="add" data-ctx="${ctx}" data-pid="${pid}" data-date="${date}">추가</button>
     </div>
     <p class="hint" id="${p}-hint">${esc(d.hint)}</p>
@@ -837,6 +940,9 @@ document.addEventListener("click",e=>{
   const a=b.dataset.act,pid=b.dataset.pid,date=b.dataset.date,ctx=b.dataset.ctx;
   if(a!=="del")S.confirmDel=null;
   if(a==="add")return addItem(ctx,pid,date);
+  if(a==="bulk-toggle"){const p=b.dataset.p;BULK[p]={...(BULK[p]||{}),open:!(BULK[p]||{}).open};render();if(BULK[p].open)document.getElementById(p+"-bulk")?.focus();return}
+  if(a==="bulk-add")return bulkAdd(ctx,pid,date,b.dataset.p);
+  if(a==="undo"){const u=S.undo;if(!u)return;S.undo=null;setItems(u.pid,u.date,items(u.pid,u.date).filter(i=>!u.ids.includes(i.id)));document.getElementById("toast").hidden=true;toast("되돌렸어요");return}
   if(a==="tab"){const i=+b.dataset.i,cs=document.getElementById("cards"),c=cs&&cs.children[i];
     if(c){cs.scrollTo({left:c.offsetLeft-cs.offsetLeft,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
     S.cardIdx=i;document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("on",j===i));return}
@@ -877,6 +983,7 @@ document.addEventListener("input",e=>{
   const el=e.target,f=el.dataset.f;if(!f)return;
   const tv=el.closest(".tsel")?tselValue(el.closest(".tsel")):el.value;
   if(f==="time"){draft(el.dataset.p).time=tv;return}
+  if(f==="bulk"){const p=el.dataset.p;BULK[p]={...(BULK[p]||{}),open:true,text:el.value};const pv=document.getElementById(p+"-bulkprev");if(pv)pv.innerHTML=bulkPrevHTML(p);return}
   if(f==="tgedit"&&S.tEdit){S.tEdit.v=tv;return}
   if(S.editing&&f==="etime"){S.editing.time=tv;return}
   if(f==="food"||f==="g"||f==="kcal"){
