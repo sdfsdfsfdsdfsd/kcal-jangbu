@@ -131,10 +131,10 @@ button{cursor:pointer}
 .bulksum b{color:var(--over)}
 .warnt{color:var(--over)}
 .toast .undo{margin-left:10px;border:0;background:var(--surface);color:var(--ink);border-radius:6px;padding:4px 10px;font-weight:700;font-size:13px}
-.prow>div.totop-row{grid-column:1/-1;display:flex;justify-content:flex-end;padding:10px 20px 0}
-.totop{height:34px;padding:0 12px;border-radius:99px;border:1.5px solid var(--line-strong);background:var(--surface);font-size:13px;font-weight:700;color:var(--ink)}
-.totop:hover{border-color:var(--ink)}
-@media (max-width:640px){.prow>div.totop-row{padding:10px 14px 0}}
+.prow>div.totop-row{grid-column:1/-1;height:0;padding:0;position:relative;overflow:visible;z-index:2}
+.totop{position:absolute;right:20px;top:12px;height:26px;padding:0 10px;border-radius:99px;border:1px solid var(--line-strong);background:var(--surface);font-size:12px;font-weight:600;color:var(--muted)}
+.totop:hover{border-color:var(--ink);color:var(--ink)}
+@media (max-width:640px){.totop{right:14px;top:10px}}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
