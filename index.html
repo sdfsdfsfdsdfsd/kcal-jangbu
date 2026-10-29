@@ -131,6 +131,10 @@ button{cursor:pointer}
 .bulksum b{color:var(--over)}
 .warnt{color:var(--over)}
 .toast .undo{margin-left:10px;border:0;background:var(--surface);color:var(--ink);border-radius:6px;padding:4px 10px;font-weight:700;font-size:13px}
+.prow>div.totop-row{grid-column:1/-1;display:flex;justify-content:flex-end;padding:10px 20px 0}
+.totop{height:34px;padding:0 12px;border-radius:99px;border:1.5px solid var(--line-strong);background:var(--surface);font-size:13px;font-weight:700;color:var(--ink)}
+.totop:hover{border-color:var(--ink)}
+@media (max-width:640px){.prow>div.totop-row{padding:10px 14px 0}}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -737,6 +741,7 @@ function dashHTML(){
   const cards=S.people.map(p=>`<section class="card prow" id="row-${p.id}">
       <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)} <small>달력 보기 →</small></a>
         <span class="chip">${md(S.date)} ${dowOf(S.date)} · <span class="hk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></span></div>
+      <div class="totop-row"><button class="totop" data-act="totop">↑ 맨 위로</button></div>
       <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${dayTotHTML(p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
       <div class="pc-c">${shareHTML("d",p.id,S.date,true)}${sumHTML(p.id,S.date)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
     </section>`).join("");
@@ -947,6 +952,7 @@ document.addEventListener("click",e=>{
     if(c){cs.scrollTo({left:c.offsetLeft-cs.offsetLeft,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
     S.cardIdx=i;document.querySelectorAll(".tab").forEach((t,j)=>t.classList.toggle("on",j===i));return}
   if(a==="reload"){e.preventDefault();location.reload();return}
+  if(a==="totop"){window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});return}
   if(a==="jump"){const el=document.getElementById("row-"+pid);if(el)el.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
   if(a==="copy")return openEx([pid],date,b.dataset.pre);
   if(a==="copyall")return openEx(S.people.map(p=>p.id),date,null);
