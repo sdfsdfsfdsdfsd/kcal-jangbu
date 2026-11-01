@@ -579,7 +579,7 @@ function ledgerHTML(ctx,pid,date){
         <div class="erow-b"><button class="btn sm line" data-act="ecancel">취소</button><button class="btn sm" data-act="esave">저장</button></div></li>`;
     }
     const del=S.confirmDel===it.id;
-    return `<li class="row"><span class="food">${esc(it.food)}${it.via?`<span class="via" title="${it.via==="bulk"?"일괄등록으로 추가":"직접 입력으로 추가"}">${it.via==="bulk"?"일괄":"직접"}</span>`:""}</span><span class="g num">${it.grams?fmt(it.grams)+"g":""}</span>
+    return `<li class="row"><span class="food">${esc(it.food)}${it.via?`<span class="via" title="${it.via==="bulk"?"일괄등록으로 추가":"수동 입력으로 추가"}">${it.via==="bulk"?"일괄":"수동"}</span>`:""}</span><span class="g num">${it.grams?fmt(it.grams)+"g":""}</span>
       <span class="k num">${fmt(it.kcal)}</span>
       <span class="acts"><button data-act="edit" data-ctx="${ctx}" data-pid="${pid}" data-date="${date}" data-id="${it.id}" title="수정" aria-label="수정">✎</button>
       <button class="${del?"danger":""}" data-act="del" data-pid="${pid}" data-date="${date}" data-id="${it.id}" title="삭제" aria-label="삭제">${del?"삭제?":"✕"}</button></span></li>`;
