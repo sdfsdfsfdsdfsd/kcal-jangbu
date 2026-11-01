@@ -151,6 +151,7 @@ button{cursor:pointer}
 .sec{display:flex;flex-direction:column}
 .sec>.lbl{margin-bottom:8px}
 
+.via{font-size:9px;line-height:1;color:var(--muted);opacity:.7;margin-left:4px;vertical-align:1px;font-weight:400;letter-spacing:.02em}
 /* goal */
 .goal{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--hi);border-radius:8px;padding:10px 12px}
 .goal .gv{font-size:15px}
@@ -578,7 +579,7 @@ function ledgerHTML(ctx,pid,date){
         <div class="erow-b"><button class="btn sm line" data-act="ecancel">취소</button><button class="btn sm" data-act="esave">저장</button></div></li>`;
     }
     const del=S.confirmDel===it.id;
-    return `<li class="row"><span class="food">${esc(it.food)}</span><span class="g num">${it.grams?fmt(it.grams)+"g":""}</span>
+    return `<li class="row"><span class="food">${esc(it.food)}${it.via?`<span class="via" title="${it.via==="bulk"?"일괄등록으로 추가":"직접 입력으로 추가"}">${it.via==="bulk"?"일괄":"직접"}</span>`:""}</span><span class="g num">${it.grams?fmt(it.grams)+"g":""}</span>
       <span class="k num">${fmt(it.kcal)}</span>
       <span class="acts"><button data-act="edit" data-ctx="${ctx}" data-pid="${pid}" data-date="${date}" data-id="${it.id}" title="수정" aria-label="수정">✎</button>
       <button class="${del?"danger":""}" data-act="del" data-pid="${pid}" data-date="${date}" data-id="${it.id}" title="삭제" aria-label="삭제">${del?"삭제?":"✕"}</button></span></li>`;
@@ -687,7 +688,7 @@ function bulkAdd(ctx,pid,date,p){
   const b=BULK[p];if(!b)return;
   const list=parseBulk(b.text,draft(p).time).filter(x=>x.kcal!=null);
   if(!list.length){toast("추가할 음식이 없어요. 칼로리나 그람을 숫자로 적어 주세요.");return}
-  const added=list.map(x=>({id:uid(),time:x.time||"",food:x.food,grams:x.grams,kcal:x.kcal,per:x.grams?x.kcal/x.grams:null}));
+  const added=list.map(x=>({id:uid(),time:x.time||"",food:x.food,grams:x.grams,kcal:x.kcal,per:x.grams?x.kcal/x.grams:null,via:"bulk"}));
   setItems(pid,date,[...items(pid,date),...added]);
   BULK[p]={open:false,text:""};S.undo={pid,date,ids:added.map(a=>a.id)};render();
   toastUndo(`${added.length}개 추가했어요 · ${fmt(added.reduce((a,x)=>a+x.kcal,0))} kcal`);
@@ -901,7 +902,7 @@ function addItem(ctx,pid,date){
   const p=`${ctx}-${pid}`,d=draft(p),food=d.food.trim(),k=Number(String(d.kcal).replace(/,/g,"")),g=Number(String(d.grams).replace(/,/g,""));
   if(!food){d.hint="음식 이름을 입력해 주세요.";setVals(p);document.getElementById(p+"-food")?.focus();return}
   if(d.kcal===""||!isFinite(k)||k<0){d.hint="칼로리를 숫자로 입력해 주세요. 모르면 위 검색에서 AI 추정을 눌러 보세요.";setVals(p);document.getElementById(p+"-kcal")?.focus();return}
-  const it={id:uid(),time:/^\d{2}:\d{2}$/.test(d.time)?d.time:"",food,grams:d.grams!==""&&isFinite(g)&&g>0?g:null,kcal:Math.round(k),per:d.per||null};
+  const it={id:uid(),time:/^\d{2}:\d{2}$/.test(d.time)?d.time:"",food,grams:d.grams!==""&&isFinite(g)&&g>0?g:null,kcal:Math.round(k),per:d.per||null,via:"manual"};
   S.drafts[p]={time:d.time,food:"",grams:"",kcal:"",per:null,hint:`[${it.time||"시간 없음"}] ${food} ${fmt(it.kcal)} kcal 추가했어요`};S.sugg=null;
   setItems(pid,date,[...items(pid,date),it]);
   document.getElementById(p+"-food")?.focus();
