@@ -418,9 +418,11 @@ const weekTotal=(pid,wk)=>weekDays(wk).reduce((a,d)=>a+dayTotal(pid,d),0);
 const person=pid=>S.people.find(p=>p.id===pid);
 function goalFor(pid,wk){
   const g=person(pid)?.goals||{};
-  if(g[wk]) return {v:+g[wk],carried:false};
-  const prev=Object.keys(g).filter(k=>k<wk&&+g[k]>0).sort().pop();
-  return prev?{v:+g[prev],carried:true}:null;
+  // 한 번 정한 목표는 수정할 때까지 다음 주에도 그대로 유지. 그 이전 주는 처음 정한 목표로 표시
+  const ks=Object.keys(g).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)&&+g[k]>0).sort();
+  if(!ks.length) return null;
+  const at=ks.filter(k=>k<=wk).pop()||ks[0];
+  return {v:+g[at],carried:at!==wk,since:at};
 }
 const nowHM=()=>{const d=new Date();let m=Math.round(d.getMinutes()/5)*5,h=d.getHours();if(m===60){m=0;h=(h+1)%24}return pad(h)+":"+pad(m)};
 function tselHTML(id,val,f,extra){
@@ -545,13 +547,13 @@ function goalBox(ctx,pid,wk){
   const g=goalFor(pid,wk),gid=`${ctx}-${pid}-goal`;
   if(!g||S.goalEdit[pid]){
     return `<div class="goal ${g?"":"need"}">
-      <div class="goalform"><label for="${gid}" class="sub" style="width:100%">${g?"이번 주 목표 수정":"이번 주 목표 칼로리부터 정해 주세요"} (${md(wk)} – ${md(addDays(wk,6))})</label>
+      <div class="goalform"><label for="${gid}" class="sub" style="width:100%">${g?`주간 목표 수정 (${md(wk)} 주부터 계속 적용)`:"주간 목표 칼로리부터 정해 주세요 (한 번 정하면 수정할 때까지 유지돼요)"}</label>
       <input class="in num" id="${gid}" inputmode="numeric" placeholder="예: 14000" value="${g?g.v:""}" data-f="goal" data-pid="${pid}" data-ctx="${ctx}">
       <button class="btn sm" data-act="goal-save" data-pid="${pid}" data-ctx="${ctx}">저장</button>
       ${g?`<button class="tbtn mut" data-act="goal-cancel" data-pid="${pid}">취소</button>`:""}</div></div>`;
   }
   return `<div class="goal"><div><div class="gv">주간 목표 <b>${fmt(g.v)}</b> kcal</div>
-    <div class="sub">하루 기준 ${fmt(g.v/7)} kcal${g.carried?" · 지난주 목표 이어서":""}</div></div>
+    <div class="sub">하루 기준 ${fmt(g.v/7)} kcal${g.carried?" · 고정 목표":""}</div></div>
     <button class="tbtn" data-act="goal-edit" data-pid="${pid}">수정</button></div>`;
 }
 
