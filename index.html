@@ -86,6 +86,10 @@ button{cursor:pointer}
 .exb{height:48px;border-radius:8px;border:1.5px solid var(--line-strong);background:var(--surface);font-weight:700;font-size:16px}
 .exb:hover{border-color:var(--accent)}
 .exb.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.exwhy{display:flex;flex-direction:column;gap:6px}
+.exwhy label{font-size:13px;font-weight:700}
+.exwhy label span{font-weight:400;color:var(--muted)}
+.exwhy .in{height:44px;font-size:16px}
 .exfoot{display:flex;justify-content:flex-end;gap:8px}
 .calsub{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:20px}
 .calsub .week{border-top:1px solid var(--line);padding-top:16px}
@@ -449,7 +453,7 @@ const itemLine=it=>[it.food,it.grams?fmt(it.grams)+"g":null,`(${fmt(it.kcal)}kca
 const isoDay=d=>`${d}(${dowOf(d)})`;
 function personText(pid,date){
   const list=items(pid,date),name=person(pid)?.name||"";
-  const ex=exOf(pid,date),exLine=typeof ex==="boolean"?`\n운동 - ${ex?"O":"X"}`:"";
+  const ex=exOf(pid,date),why=(S.logs[key(pid,date)]?.exWhy||"").trim(),exLine=typeof ex==="boolean"?`\n운동 - ${ex?"O":"X"+(why?", "+why:"")}`:"";
   if(!list.length)return `* ${name}식단\n\n기록 없음${exLine?"\n"+exLine:""}`;
   const body=groups(list).map(g=>(g.t?`[${g.t}]\n`:"")+g.items.map(itemLine).join("\n")+(g.items.length>1?`\n→ ${fmt(g.items.reduce((a,x)=>a+(+x.kcal||0),0))}kcal`:"")).join("\n\n");
   return `* ${name}식단\n\n${body}\n\n==========\n\n토탈 - ${fmt(dayTotal(pid,date))}kcal${exLine}`;
@@ -463,7 +467,7 @@ function allText(date){
 }
 let M=null;
 function openEx(pids,date,pre){
-  M={pids,date,pre,ans:Object.fromEntries(pids.map(p=>[p,exOf(p,date)]))};
+  M={pids,date,pre,ans:Object.fromEntries(pids.map(p=>[p,exOf(p,date)])),why:Object.fromEntries(pids.map(p=>[p,S.logs[key(p,date)]?.exWhy||""]))};
   drawEx();document.getElementById("exmodal").hidden=false;
   document.querySelector("#exbox .exb")?.focus();
 }
@@ -471,16 +475,19 @@ function drawEx(){
   const one=M.pids.length===1;
   const row=pid=>{const v=M.ans[pid];return `<div class="exrow">${one?"":`<span class="exn">${esc(person(pid)?.name||"")}</span>`}
     <div class="exbtns"><button class="exb ${v===true?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="1">예</button>
-    <button class="exb ${v===false?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="0">아니오</button></div></div>`};
+    <button class="exb ${v===false?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="0">아니오</button></div></div>
+    ${v===false?`<div class="exwhy"><label for="exwhy-${pid}">왜 못 했나요? <span>(한 줄, 선택)</span></label>
+      <input class="in" id="exwhy-${pid}" data-f="exwhy" data-pid="${pid}" maxlength="60" placeholder="예: 야근, 회식, 휴식일" value="${esc(M.why[pid]||"")}"></div>`:""}`};
   document.getElementById("exbox").innerHTML=`<p class="exd">${isoDay(M.date)}${one?" · "+esc(person(M.pids[0])?.name||""):""}</p>
     <h3 id="exq">오늘 운동하셨습니까?</h3>
     ${M.pids.map(row).join("")}
     <div class="exfoot"><button class="btn line" data-act="ex-cancel">취소</button>
-    ${one?"":`<button class="btn" data-act="ex-copy">복사하기</button>`}</div>`;
+    ${!one||M.ans[M.pids[0]]===false?`<button class="btn" data-act="ex-copy">복사하기</button>`:""}</div>`;
 }
 function finishEx(){
   const m=M;document.getElementById("exmodal").hidden=true;M=null;
-  for(const pid of m.pids){const v=m.ans[pid];if(typeof v==="boolean"&&v!==exOf(pid,m.date))setEx(pid,m.date,v)}
+  for(const pid of m.pids){const v=m.ans[pid],w=v===false?String(m.why[pid]||"").trim():"";
+    if(typeof v==="boolean"&&(v!==exOf(pid,m.date)||w!==(S.logs[key(pid,m.date)]?.exWhy||"")))setEx(pid,m.date,v,w)}
   copyText(m.pids.length===1?dayText(m.pids[0],m.date):allText(m.date),m.pre);
 }
 async function copyText(txt,preId){
@@ -501,22 +508,22 @@ function fail(e){
 function saveDay(pid,date){
   const k=key(pid,date),path="kcal_logs/"+k;
   return enqueue(path,async()=>{
-    const list=(S.logs[k]?.items)||[],ex=S.logs[k]?.ex;
+    const list=(S.logs[k]?.items)||[],ex=S.logs[k]?.ex,why=S.logs[k]?.exWhy;
     if(!S.db) throw {code:"unavailable"};
-    const body={person:pid,date,items:list};if(typeof ex==="boolean")body.ex=ex;
+    const body={person:pid,date,items:list};if(typeof ex==="boolean")body.ex=ex;if(ex===false&&why)body.exWhy=String(why).slice(0,100);
     if(list.length||typeof ex==="boolean") await S.db.doc(path).set(body);
     else await S.db.doc(path).delete();
   }).catch(fail);
 }
-function setEx(pid,date,v){
-  const k=key(pid,date);S.logs[k]={...(S.logs[k]||{person:pid,date,items:[]}),ex:v};
+function setEx(pid,date,v,why){
+  const k=key(pid,date);S.logs[k]={...(S.logs[k]||{person:pid,date,items:[]}),ex:v,exWhy:v===false?(why||""):""};
   render();saveDay(pid,date);
 }
 const exOf=(pid,date)=>S.logs[key(pid,date)]?.ex;
 function setItems(pid,date,list){
   const k=key(pid,date);
-  const ex=S.logs[k]?.ex;
-  S.logs[k]={person:pid,date,items:list};if(typeof ex==="boolean")S.logs[k].ex=ex;
+  const ex=S.logs[k]?.ex,why=S.logs[k]?.exWhy;
+  S.logs[k]={person:pid,date,items:list};if(typeof ex==="boolean")S.logs[k].ex=ex;if(why)S.logs[k].exWhy=why;
   render();saveDay(pid,date);
 }
 
@@ -961,7 +968,7 @@ document.addEventListener("click",e=>{
   if(a==="copy")return openEx([pid],date,b.dataset.pre);
   if(a==="copyall")return openEx(S.people.map(p=>p.id),date,null);
   if(a==="ex-pick"){const v=b.dataset.v==="1";M.ans[b.dataset.pid]=v;
-    if(M.pids.length===1)return finishEx();return drawEx()}
+    if(M.pids.length===1&&v)return finishEx();drawEx();if(!v)document.getElementById("exwhy-"+b.dataset.pid)?.focus();return}
   if(a==="ex-copy")return finishEx();
   if(a==="ex-cancel"){document.getElementById("exmodal").hidden=true;M=null;return}
   if(a==="del"){
@@ -993,6 +1000,7 @@ document.addEventListener("input",e=>{
   const el=e.target,f=el.dataset.f;if(!f)return;
   const tv=el.closest(".tsel")?tselValue(el.closest(".tsel")):el.value;
   if(f==="time"){draft(el.dataset.p).time=tv;return}
+  if(f==="exwhy"&&M){M.why[el.dataset.pid]=el.value;return}
   if(f==="bulk"){const p=el.dataset.p;BULK[p]={...(BULK[p]||{}),open:true,text:el.value};const pv=document.getElementById(p+"-bulkprev");if(pv)pv.innerHTML=bulkPrevHTML(p);return}
   if(f==="tgedit"&&S.tEdit){S.tEdit.v=tv;return}
   if(S.editing&&f==="etime"){S.editing.time=tv;return}
@@ -1025,6 +1033,7 @@ document.addEventListener("keydown",e=>{
   if(f==="efood"||f==="eg"||f==="ekcal"){e.preventDefault();saveEdit()}
   if(f==="goal"){e.preventDefault();saveGoal(el.dataset.ctx,el.dataset.pid)}
   if(f==="tgedit"){e.preventDefault();saveTg()}
+  if(f==="exwhy"&&M){e.preventDefault();finishEx()}
 });
 document.addEventListener("focusout",e=>{
   if(e.target.dataset&&e.target.dataset.f==="food"&&S.sugg&&S.sugg.p===e.target.dataset.p){S.sugg=null;drawSugg(e.target.dataset.p)}
