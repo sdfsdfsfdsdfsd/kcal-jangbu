@@ -90,6 +90,8 @@ button{cursor:pointer}
 .exwhy label{font-size:13px;font-weight:700}
 .exwhy label span{font-weight:400;color:var(--muted)}
 .exwhy .in{height:44px;font-size:16px}
+.exerr{margin:0;font-size:13px;font-weight:700;color:var(--over)}
+.exwhy .in.bad{border-color:var(--over);box-shadow:0 0 0 3px var(--over-soft)}
 .exfoot{display:flex;justify-content:flex-end;gap:8px}
 .calsub{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:20px}
 .calsub .week{border-top:1px solid var(--line);padding-top:16px}
@@ -476,8 +478,9 @@ function drawEx(){
   const row=pid=>{const v=M.ans[pid];return `<div class="exrow">${one?"":`<span class="exn">${esc(person(pid)?.name||"")}</span>`}
     <div class="exbtns"><button class="exb ${v===true?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="1">예</button>
     <button class="exb ${v===false?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="0">아니오</button></div></div>
-    ${v===false?`<div class="exwhy"><label for="exwhy-${pid}">왜 못 했나요? <span>(한 줄, 선택)</span></label>
-      <input class="in" id="exwhy-${pid}" data-f="exwhy" data-pid="${pid}" maxlength="60" placeholder="예: 야근, 회식, 휴식일" value="${esc(M.why[pid]||"")}"></div>`:""}`};
+    ${v===false?`<div class="exwhy"><label for="exwhy-${pid}">왜 못 했나요? <span>(한 줄)</span></label>
+      <input class="in" id="exwhy-${pid}" data-f="exwhy" data-pid="${pid}" maxlength="60" placeholder="예: 야근, 회식, 휴식일" value="${esc(M.why[pid]||"")}" aria-describedby="exerr-${pid}">
+      <p class="exerr" id="exerr-${pid}" hidden>사유를 적어주세요</p></div>`:""}`};
   document.getElementById("exbox").innerHTML=`<p class="exd">${isoDay(M.date)}${one?" · "+esc(person(M.pids[0])?.name||""):""}</p>
     <h3 id="exq">오늘 운동하셨습니까?</h3>
     ${M.pids.map(row).join("")}
@@ -485,6 +488,9 @@ function drawEx(){
     ${!one||M.ans[M.pids[0]]===false?`<button class="btn" data-act="ex-copy">복사하기</button>`:""}</div>`;
 }
 function finishEx(){
+  const need=M.pids.find(pid=>M.ans[pid]===false&&!String(M.why[pid]||"").trim());
+  if(need){const el=document.getElementById("exwhy-"+need),er=document.getElementById("exerr-"+need);
+    if(er)er.hidden=false;if(el){el.classList.add("bad");el.focus()}return}
   const m=M;document.getElementById("exmodal").hidden=true;M=null;
   for(const pid of m.pids){const v=m.ans[pid],w=v===false?String(m.why[pid]||"").trim():"";
     if(typeof v==="boolean"&&(v!==exOf(pid,m.date)||w!==(S.logs[key(pid,m.date)]?.exWhy||"")))setEx(pid,m.date,v,w)}
@@ -1000,7 +1006,7 @@ document.addEventListener("input",e=>{
   const el=e.target,f=el.dataset.f;if(!f)return;
   const tv=el.closest(".tsel")?tselValue(el.closest(".tsel")):el.value;
   if(f==="time"){draft(el.dataset.p).time=tv;return}
-  if(f==="exwhy"&&M){M.why[el.dataset.pid]=el.value;return}
+  if(f==="exwhy"&&M){M.why[el.dataset.pid]=el.value;if(el.value.trim()){el.classList.remove("bad");const er=document.getElementById("exerr-"+el.dataset.pid);if(er)er.hidden=true}return}
   if(f==="bulk"){const p=el.dataset.p;BULK[p]={...(BULK[p]||{}),open:true,text:el.value};const pv=document.getElementById(p+"-bulkprev");if(pv)pv.innerHTML=bulkPrevHTML(p);return}
   if(f==="tgedit"&&S.tEdit){S.tEdit.v=tv;return}
   if(S.editing&&f==="etime"){S.editing.time=tv;return}
