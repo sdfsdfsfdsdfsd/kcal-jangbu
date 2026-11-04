@@ -479,7 +479,7 @@ function drawEx(){
     <div class="exbtns"><button class="exb ${v===true?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="1">예</button>
     <button class="exb ${v===false?"on":""}" data-act="ex-pick" data-pid="${pid}" data-v="0">아니오</button></div></div>
     ${v===false?`<div class="exwhy"><label for="exwhy-${pid}">왜 못 했나요? <span>(한 줄)</span></label>
-      <input class="in" id="exwhy-${pid}" data-f="exwhy" data-pid="${pid}" maxlength="60" placeholder="예: 야근, 회식, 휴식일" value="${esc(M.why[pid]||"")}" aria-describedby="exerr-${pid}">
+      <input class="in" id="exwhy-${pid}" data-f="exwhy" data-pid="${pid}" maxlength="60" placeholder="ex) 휴식일, 야근, 개인일정 등 한줄로" value="${esc(M.why[pid]||"")}" aria-describedby="exerr-${pid}">
       <p class="exerr" id="exerr-${pid}" hidden>사유를 적어주세요</p></div>`:""}`};
   document.getElementById("exbox").innerHTML=`<p class="exd">${isoDay(M.date)}${one?" · "+esc(person(M.pids[0])?.name||""):""}</p>
     <h3 id="exq">오늘 운동하셨습니까?</h3>
