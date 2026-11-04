@@ -451,7 +451,7 @@ function personText(pid,date){
   const list=items(pid,date),name=person(pid)?.name||"";
   const ex=exOf(pid,date),exLine=typeof ex==="boolean"?`\n운동 - ${ex?"O":"X"}`:"";
   if(!list.length)return `* ${name}식단\n\n기록 없음${exLine?"\n"+exLine:""}`;
-  const body=groups(list).map(g=>(g.t?`[${g.t}]\n`:"")+g.items.map(itemLine).join("\n")+(g.items.length>1?`\n-> ${fmt(g.items.reduce((a,x)=>a+(+x.kcal||0),0))}kcal`:"")).join("\n\n");
+  const body=groups(list).map(g=>(g.t?`[${g.t}]\n`:"")+g.items.map(itemLine).join("\n")+(g.items.length>1?`\n→ ${fmt(g.items.reduce((a,x)=>a+(+x.kcal||0),0))}kcal`:"")).join("\n\n");
   return `* ${name}식단\n\n${body}\n\n==========\n\n토탈 - ${fmt(dayTotal(pid,date))}kcal${exLine}`;
 }
 function dayText(pid,date){
