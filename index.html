@@ -471,7 +471,7 @@ function allText(date){
   return isoDay(date)+"\n\n"+S.people.map(p=>personText(p.id,date)).join("\n\n\n");
 }
 /* ---------- 인증(톡방 공유) 확인 ---------- */
-const GATE_START="2026-10-26";   /* 장부 시작일부터 검사 */
+const GATE_START="2026-11-16";   /* 11/16부터 검사 (이전 기록은 검사 안 함) */
 /* 기준: 복사 이력이 없으면 무조건 미인증 (기록이 없는 날 포함) */
 const GATE={};                   /* pid -> {at, list} 캐시 */
 async function readDay(pid,date){
