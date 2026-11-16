@@ -1055,10 +1055,11 @@ document.addEventListener("click",e=>{
   const a=b.dataset.act,pid=b.dataset.pid,date=b.dataset.date,ctx=b.dataset.ctx;
   if(a!=="del")S.confirmDel=null;
   if(a==="gate-close")return closeGate();
-  if(a==="gate-go"){closeGate();S.date=b.dataset.date;S.editing=null;subscribe();render();
-    setTimeout(()=>{const el=document.getElementById("row-"+b.dataset.pid)||document.querySelector(".share");
-      const sh=el&&el.querySelector?el.querySelector(".share"):null;(sh||el)?.scrollIntoView({behavior:"smooth",block:"center"})},400);
-    toast("이 날 일일표를 복사해서 톡방에 올려 주세요");return}
+  if(a==="gate-go"){closeGate();const gp=b.dataset.pid;S.date=b.dataset.date;S.editing=null;
+    const h="#p-"+gp;if(location.hash!==h)location.hash=h;else go();
+    setTimeout(()=>{const el=document.querySelector('.panel [data-gate-pid="'+gp+'"]');
+      if(el){const y=el.getBoundingClientRect().top+window.scrollY-16;window.scrollTo({top:y,behavior:"smooth"})}},350);
+    toast(`${longDate(b.dataset.date)} 식단을 입력하고 일일표를 복사해 주세요`);return}
   if(a==="add"||a==="bulk-toggle"||a==="bulk-add"){
     const host=b.closest("[data-gate-pid]");
     if(host&&!b.dataset.gateok){e.preventDefault();const gp=host.dataset.gatePid,gd=host.dataset.gateDate;
