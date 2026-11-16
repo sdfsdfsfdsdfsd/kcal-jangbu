@@ -482,6 +482,7 @@ const GATE_START="2026-11-16";   /* 11/16부터 검사 (이전 기록은 검사 
 /* 검사 시작 전 미인증으로 확정된 날 (달력 표시용) */
 const PRE_UNVERIFIED={youngwoo:["2026-11-01","2026-11-13","2026-11-14","2026-11-15"],jaehyun:["2026-11-15"],jeonghwan:["2026-11-15"]};
 function isUnverified(pid,d){
+  if(S.logs[key(pid,d)]?.shared)return false;   /* 복사 이력이 있으면 미인증 아님 */
   if(d<GATE_START)return (PRE_UNVERIFIED[pid]||[]).includes(d);
   if(d>=today())return false;
   return !S.logs[key(pid,d)]?.shared;
