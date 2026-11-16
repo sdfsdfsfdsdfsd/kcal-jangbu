@@ -512,8 +512,8 @@ async function refreshYesterday(){
 }
 function ybannerHTML(pid){
   const y=yesterdayMissed(pid);if(!y)return "";
-  return `<div class="ybanner" role="alert"><p class="yb1">🚨식단인증을 하지 않으셨습니다.</p>
-    <p class="yb2">톡방에 ${parse(y).getDate()}일자 인증을 해주시면 이 메시지는 사라집니다.</p>
+  return `<div class="ybanner" role="alert"><p class="yb1">🚨어제 식단인증을 하지 않으셨습니다.</p>
+    <p class="yb2">인증을 해주시면 이 메시지는 사라집니다.</p>
     <button class="btn sm" data-act="gate-go" data-pid="${pid}" data-date="${y}">인증하러 가기</button></div>`;
 }
 const GATE={};                   /* pid -> {at, list} 캐시 */
