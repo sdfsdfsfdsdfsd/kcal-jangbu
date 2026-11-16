@@ -488,7 +488,9 @@ function isUnverified(pid,d){
 }
 /* 도망: 기록이 아예 없이 이틀이 지난 날 (d+3일부터). 확정되면 입력 막기에서는 빠지고 달력에 도장만 남음 */
 const FLEE_AFTER=3;
+const LEDGER_START="2026-10-26";
 function isFled(pid,d){
+  if(d<GATE_START)return d>=LEDGER_START&&!items(pid,d).length;   /* 16일 이전 공백은 바로 도망 */
   if(addDays(d,FLEE_AFTER)>today())return false;
   return isUnverified(pid,d)&&!items(pid,d).length;
 }
