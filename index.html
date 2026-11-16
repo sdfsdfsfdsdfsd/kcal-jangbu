@@ -482,7 +482,7 @@ async function missingDays(pid,before){
   const out=[];
   for(let d=GATE_START;d<before;d=addDays(d,1)){
     const L=await readDay(pid,d);
-    if(L&&(L.items||[]).length&&!L.shared)out.push(d);
+    if(!(L&&L.shared))out.push(d);   /* 복사 이력이 없으면 미인증 (기록이 없는 날 포함) */
   }
   return out;
 }
