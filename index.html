@@ -151,6 +151,12 @@ button{cursor:pointer}
 .stamp{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-14deg);font-family:var(--f-display);
   font-size:clamp(11px,2.8vw,16px);line-height:1;color:var(--over);border:2px solid var(--over);border-radius:5px;padding:3px 5px 2px;
   letter-spacing:.04em;white-space:nowrap;opacity:.85;background:color-mix(in srgb,var(--surface) 55%,transparent);pointer-events:none;z-index:1}
+.ybanner{margin-top:16px;border:1.5px solid var(--over);background:var(--over-soft);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.ybanner p{margin:0}
+.ybanner .yb1{font-weight:800;font-size:16px;color:var(--over)}
+.ybanner .yb2{font-size:14px;color:var(--ink)}
+.ybanner .btn{margin-top:4px;background:var(--over)}
+.ybanner+.sec{margin-top:24px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -488,6 +494,28 @@ function isUnverified(pid,d){
   return !S.logs[key(pid,d)]?.shared;
 }
 const GATE_ON=false;            /* 미인증 입력 막기 팝업 (true로 바꾸면 다시 켜짐) */
+/* 어제 인증 안내: 오늘 기준 어제 하나만 확인 */
+const YCHK={};   /* pid -> {day, missed} */
+function yesterdayMissed(pid){const y=addDays(today(),-1);const c=YCHK[pid];return c&&c.day===y&&c.missed?y:null}
+let ychkBusy=false;
+async function refreshYesterday(){
+  if(ychkBusy||!S.db||!S.people.length)return;ychkBusy=true;
+  try{
+    const y=addDays(today(),-1);let changed=false;
+    for(const p of S.people){
+      let missed=false;
+      if(y>=GATE_START){const L=await readDay(p.id,y);missed=!(L&&L.shared)}
+      const prev=YCHK[p.id];if(!prev||prev.day!==y||prev.missed!==missed){YCHK[p.id]={day:y,missed};changed=true}
+    }
+    if(changed)render();
+  }finally{ychkBusy=false}
+}
+function ybannerHTML(pid){
+  const y=yesterdayMissed(pid);if(!y)return "";
+  return `<div class="ybanner" role="alert"><p class="yb1">🚨식단인증을 하지 않으셨습니다.</p>
+    <p class="yb2">톡방에 ${parse(y).getDate()}일자 인증을 해주시면 이 메시지는 사라집니다.</p>
+    <button class="btn sm" data-act="gate-go" data-pid="${pid}" data-date="${y}">인증하러 가기</button></div>`;
+}
 const GATE={};                   /* pid -> {at, list} 캐시 */
 async function readDay(pid,date){
   const k=key(pid,date);if(S.logs[k])return S.logs[k];
@@ -557,7 +585,7 @@ function finishEx(){
   for(const pid of m.pids){const v=m.ans[pid],w=v===false?String(m.why[pid]||"").trim():"";
     if(typeof v==="boolean"&&(v!==exOf(pid,m.date)||w!==(S.logs[key(pid,m.date)]?.exWhy||"")))setEx(pid,m.date,v,w)}
   for(const pid of m.pids){const k=key(pid,m.date);if(!S.logs[k]?.shared&&items(pid,m.date).length){S.logs[k]={...(S.logs[k]||{person:pid,date:m.date,items:[]}),shared:new Date().toISOString()};saveDay(pid,m.date);delete GATE[pid]}}
-  render();
+  render();refreshYesterday();
   copyText(m.pids.length===1?dayText(m.pids[0],m.date):allText(m.date),m.pre);
 }
 async function copyText(txt,preId){
@@ -614,7 +642,7 @@ function subscribe(){
   if(r===S.range) return;
   S.range=r; if(S.unsub) S.unsub();
   S.unsub=S.db.collection("kcal_logs").where("date",">=",a).where("date","<=",b).onSnapshot(snap=>{
-    const m={}; snap.docs.forEach(d=>{m[d.id]=d.data()}); S.logs=m; render();
+    const m={}; snap.docs.forEach(d=>{m[d.id]=d.data()}); S.logs=m; render(); refreshYesterday();
   },()=>{S.range="";toast("기록을 불러오지 못했어요. 새로고침해 주세요.")});
 }
 
@@ -823,7 +851,7 @@ function dashHTML(){
       <div class="prow-h"><a class="pname" href="#p-${p.id}">${esc(p.name)} <small>달력 보기 →</small></a>
         <span class="chip">${md(S.date)} ${dowOf(S.date)} · <span class="hk"><b class="num">${fmt(dayTotal(p.id,S.date))}</b> kcal</span></span></div>
       <div class="totop-row"><button class="totop" data-act="totop">↑ 맨 위로</button></div>
-      <div class="pc-a">${goalHTML("d",p.id,wk)}${addHTML("d",p.id,S.date)}${dayTotHTML(p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
+      <div class="pc-a">${goalHTML("d",p.id,wk)}${ybannerHTML(p.id)}${addHTML("d",p.id,S.date)}${dayTotHTML(p.id,S.date)}${ledgerHTML("d",p.id,S.date)}</div>
       <div class="pc-c">${shareHTML("d",p.id,S.date,true)}${sumHTML(p.id,S.date)}<a class="tocal" href="#p-${p.id}">달력 · 주간 현황 보기 →</a></div>
     </section>`).join("");
   return `<div class="top"><div class="brand"><h1><a class="home" href="./" data-act="reload" title="새로고침">칼로리장부</a></h1><nav class="jump" aria-label="사람별로 이동">${["jeonghwan","jaehyun","youngwoo"].map(person).filter(Boolean).concat(S.people.filter(p=>!["jeonghwan","jaehyun","youngwoo"].includes(p.id)))
@@ -863,6 +891,7 @@ function personHTML(){
       </div>
       <div class="panel">
         ${goalHTML("p",p.id,wk)}
+        ${ybannerHTML(p.id)}
         ${addHTML("p",p.id,S.date)}
         ${dayTotHTML(p.id,S.date)}
         ${ledgerHTML("p",p.id,S.date)}
