@@ -93,7 +93,7 @@ button{cursor:pointer}
 .exerr{margin:0;font-size:13px;font-weight:700;color:var(--over)}
 .exwhy .in.bad{border-color:var(--over);box-shadow:0 0 0 3px var(--over-soft)}
 .gtxt{margin:0;font-size:15px;font-weight:600}
-.glist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.glist{list-style:none;margin:0;padding:0;max-height:min(46vh,340px);overflow:auto;display:flex;flex-direction:column;gap:6px}
 .glist li{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-weight:700;color:var(--over)}
 .exfoot{display:flex;justify-content:flex-end;gap:8px}
 .calsub{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:20px}
@@ -472,9 +472,7 @@ function allText(date){
 }
 /* ---------- 인증(톡방 공유) 확인 ---------- */
 const GATE_START="2026-10-26";   /* 장부 시작일부터 검사 */
-const COPY_TRACK="2026-11-15";
-/* 복사 이력이 없던 기간 중, 기록은 있지만 톡방 인증을 안 한 날 (직접 지정) */
-const LEGACY_MISS={youngwoo:["2026-11-01"]};   /* 이 날부터는 복사 이력으로 판단, 그 전은 기록이 아예 없는 날을 미인증으로 봄 */
+/* 기준: 복사 이력이 없으면 무조건 미인증 (기록이 없는 날 포함) */
 const GATE={};                   /* pid -> {at, list} 캐시 */
 async function readDay(pid,date){
   const k=key(pid,date);if(S.logs[k])return S.logs[k];
@@ -482,14 +480,9 @@ async function readDay(pid,date){
     if(r&&typeof r.data==="function")return r.exists?r.data():null;return r||null}catch(e){return null}
 }
 async function missingDays(pid,before){
-  const out=[];
-  for(let d=GATE_START;d<before;d=addDays(d,1)){
-    const L=await readDay(pid,d);
-    if(d<COPY_TRACK){if(L&&L.shared)continue;
-      if(!(L&&(L.items||[]).length)||(LEGACY_MISS[pid]||[]).includes(d))out.push(d)}
-    else if(!(L&&L.shared))out.push(d);   /* 복사 이력이 없으면 미인증 (기록이 없는 날 포함) */
-  }
-  return out;
+  const ds=[];for(let d=GATE_START;d<before;d=addDays(d,1))ds.push(d);
+  const Ls=await Promise.all(ds.map(d=>readDay(pid,d)));
+  return ds.filter((d,i)=>!(Ls[i]&&Ls[i].shared));
 }
 let GATE_OPEN=false;
 async function gateCheck(pid,date){
