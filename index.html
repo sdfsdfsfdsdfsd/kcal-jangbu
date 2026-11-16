@@ -148,6 +148,9 @@ button{cursor:pointer}
 .dnrow{display:flex;align-items:center;gap:4px;min-width:0}
 .unv{font-size:clamp(9px,2.2vw,11px);font-weight:700;color:var(--over);white-space:nowrap;letter-spacing:-.03em}
 .cell{position:relative}
+.stamp{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-14deg);font-family:var(--f-display);
+  font-size:clamp(11px,2.8vw,16px);line-height:1;color:var(--over);border:2px solid var(--over);border-radius:5px;padding:3px 5px 2px;
+  letter-spacing:.04em;white-space:nowrap;opacity:.85;background:color-mix(in srgb,var(--surface) 55%,transparent);pointer-events:none;z-index:1}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
 @media (max-width:980px){.prow{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}.prow .pc-c{grid-column:1/-1;border-left:0;padding-left:0}}
 @media (max-width:640px){.prow{grid-template-columns:minmax(0,1fr)}.prow .pc-b{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
@@ -838,7 +841,7 @@ function personHTML(){
   const cal=cells.map(d=>{
     const v=dayTotal(p.id,d),g=goalFor(p.id,monday(d)),daily=g?g.v/7:0;
     const cls=["cell",d.slice(0,7)!==S.month?"out":"",v&&daily?(v>daily?"over":"ok"):"",d===today()?"today":"",d===S.date?"sel":""].join(" ");
-    return `<button class="${cls}" data-act="pick" data-date="${d}" aria-label="${longDate(d)} ${fmt(v)}kcal${exOf(p.id,d)===true?" 운동함":exOf(p.id,d)===false?" 운동 안 함":""}"><span class="dnrow"><span class="dn ${exOf(p.id,d)===false?"exn":""}">${parse(d).getDate()}</span>${isUnverified(p.id,d)?`<span class="unv">미인증</span>`:""}</span><span class="ck">${v?fmt(v):""}</span></button>`;
+    return `<button class="${cls}" data-act="pick" data-date="${d}" aria-label="${longDate(d)} ${fmt(v)}kcal${exOf(p.id,d)===true?" 운동함":exOf(p.id,d)===false?" 운동 안 함":""}"><span class="dnrow"><span class="dn ${exOf(p.id,d)===false?"exn":""}">${parse(d).getDate()}</span></span>${isUnverified(p.id,d)?`<span class="stamp" aria-label="미인증">미인증</span>`:""}<span class="ck">${v?fmt(v):""}</span></button>`;
   }).join("");
   const weeks=[];for(let w=gs;w<=ge;w=addDays(w,7))weeks.push(w);
   const wl=weeks.map(w=>{const t=weekTotal(p.id,w),g=goalFor(p.id,w),over=g&&t>g.v;
