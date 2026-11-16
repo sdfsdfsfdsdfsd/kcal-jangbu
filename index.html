@@ -487,6 +487,7 @@ function isUnverified(pid,d){
   if(d>=today())return false;
   return !S.logs[key(pid,d)]?.shared;
 }
+const GATE_ON=false;            /* 미인증 입력 막기 팝업 (true로 바꾸면 다시 켜짐) */
 const GATE={};                   /* pid -> {at, list} 캐시 */
 async function readDay(pid,date){
   const k=key(pid,date);if(S.logs[k])return S.logs[k];
@@ -502,7 +503,7 @@ let GATE_OPEN=false;
 async function gateCheck(pid,date){
   /* 전날 이전 기록은 언제든 입력 가능. 오늘·미래만 막음 */
   const td=today();
-  if(!S.db||date<td)return true;
+  if(!GATE_ON||!S.db||date<td)return true;
   const c=GATE[pid];let list;
   if(c&&c.before===td&&Date.now()-c.at<15000)list=c.list;
   else{list=await missingDays(pid,td);GATE[pid]={at:Date.now(),before:td,list}}
