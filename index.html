@@ -471,7 +471,8 @@ function allText(date){
   return isoDay(date)+"\n\n"+S.people.map(p=>personText(p.id,date)).join("\n\n\n");
 }
 /* ---------- 인증(톡방 공유) 확인 ---------- */
-const GATE_START="2026-11-15";   /* 이 날부터 검사 */
+const GATE_START="2026-10-26";   /* 장부 시작일부터 검사 */
+const COPY_TRACK="2026-11-15";   /* 이 날부터는 복사 이력으로 판단, 그 전은 기록이 아예 없는 날을 미인증으로 봄 */
 const GATE={};                   /* pid -> {at, list} 캐시 */
 async function readDay(pid,date){
   const k=key(pid,date);if(S.logs[k])return S.logs[k];
@@ -482,7 +483,8 @@ async function missingDays(pid,before){
   const out=[];
   for(let d=GATE_START;d<before;d=addDays(d,1)){
     const L=await readDay(pid,d);
-    if(!(L&&L.shared))out.push(d);   /* 복사 이력이 없으면 미인증 (기록이 없는 날 포함) */
+    if(d<COPY_TRACK){if(!(L&&((L.items||[]).length||L.shared)))out.push(d)}
+    else if(!(L&&L.shared))out.push(d);   /* 복사 이력이 없으면 미인증 (기록이 없는 날 포함) */
   }
   return out;
 }
