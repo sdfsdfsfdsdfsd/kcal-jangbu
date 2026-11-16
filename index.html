@@ -488,10 +488,12 @@ async function missingDays(pid,before){
 }
 let GATE_OPEN=false;
 async function gateCheck(pid,date){
-  if(!S.db||date<=GATE_START)return true;
+  /* 전날 이전 기록은 언제든 입력 가능. 오늘·미래만 막음 */
+  const td=today();
+  if(!S.db||date<td)return true;
   const c=GATE[pid];let list;
-  if(c&&c.before===date&&Date.now()-c.at<15000)list=c.list;
-  else{list=await missingDays(pid,date);GATE[pid]={at:Date.now(),before:date,list}}
+  if(c&&c.before===td&&Date.now()-c.at<15000)list=c.list;
+  else{list=await missingDays(pid,td);GATE[pid]={at:Date.now(),before:td,list}}
   if(!list.length)return true;
   showGate(pid,list);return false;
 }
