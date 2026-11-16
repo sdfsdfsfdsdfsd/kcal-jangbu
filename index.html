@@ -486,6 +486,12 @@ function isUnverified(pid,d){
   if(d>=today())return false;
   return !S.logs[key(pid,d)]?.shared;
 }
+/* 도망: 기록이 아예 없이 이틀이 지난 날 (d+3일부터). 확정되면 입력 막기에서는 빠지고 달력에 도장만 남음 */
+const FLEE_AFTER=3;
+function isFled(pid,d){
+  if(addDays(d,FLEE_AFTER)>today())return false;
+  return isUnverified(pid,d)&&!items(pid,d).length;
+}
 const GATE={};                   /* pid -> {at, list} 캐시 */
 async function readDay(pid,date){
   const k=key(pid,date);if(S.logs[k])return S.logs[k];
@@ -495,7 +501,10 @@ async function readDay(pid,date){
 async function missingDays(pid,before){
   const ds=[];for(let d=GATE_START;d<before;d=addDays(d,1))ds.push(d);
   const Ls=await Promise.all(ds.map(d=>readDay(pid,d)));
-  return ds.filter((d,i)=>!(Ls[i]&&Ls[i].shared));
+  return ds.filter((d,i)=>{const L=Ls[i];if(L&&L.shared)return false;
+    const blank=!(L&&(L.items||[]).length);
+    return !(blank&&addDays(d,FLEE_AFTER)<=before);   /* 도망 확정된 날은 막지 않음 */
+  });
 }
 let GATE_OPEN=false;
 async function gateCheck(pid,date){
@@ -840,7 +849,7 @@ function personHTML(){
   const cal=cells.map(d=>{
     const v=dayTotal(p.id,d),g=goalFor(p.id,monday(d)),daily=g?g.v/7:0;
     const cls=["cell",d.slice(0,7)!==S.month?"out":"",v&&daily?(v>daily?"over":"ok"):"",d===today()?"today":"",d===S.date?"sel":""].join(" ");
-    return `<button class="${cls}" data-act="pick" data-date="${d}" aria-label="${longDate(d)} ${fmt(v)}kcal${exOf(p.id,d)===true?" 운동함":exOf(p.id,d)===false?" 운동 안 함":""}"><span class="dnrow"><span class="dn ${exOf(p.id,d)===false?"exn":""}">${parse(d).getDate()}</span>${isUnverified(p.id,d)?`<span class="unv">미인증</span>`:""}</span>${isUnverified(p.id,d)&&!items(p.id,d).length?`<span class="flee" aria-label="도망">도망</span>`:`<span class="ck">${v?fmt(v):""}</span>`}</button>`;
+    return `<button class="${cls}" data-act="pick" data-date="${d}" aria-label="${longDate(d)} ${fmt(v)}kcal${exOf(p.id,d)===true?" 운동함":exOf(p.id,d)===false?" 운동 안 함":""}"><span class="dnrow"><span class="dn ${exOf(p.id,d)===false?"exn":""}">${parse(d).getDate()}</span>${isUnverified(p.id,d)&&!isFled(p.id,d)?`<span class="unv">미인증</span>`:""}</span>${isFled(p.id,d)?`<span class="flee" aria-label="도망">도망</span>`:`<span class="ck">${v?fmt(v):""}</span>`}</button>`;
   }).join("");
   const weeks=[];for(let w=gs;w<=ge;w=addDays(w,7))weeks.push(w);
   const wl=weeks.map(w=>{const t=weekTotal(p.id,w),g=goalFor(p.id,w),over=g&&t>g.v;
