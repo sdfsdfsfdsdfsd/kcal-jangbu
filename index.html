@@ -519,7 +519,7 @@ async function refreshYesterday(){
 }
 function ybannerHTML(pid){
   const y=yesterdayMissed(pid);if(!y)return "";
-  return `<div class="ybanner" role="alert"><p class="yb1">🚨어제 식단인증을 하지 않으셨습니다.</p>
+  return `<div class="ybanner" role="alert"><p class="yb1">🚨${pid==="jaehyun"?"트레이너란 사람이 어제 식단 인증을 안하셨습니다.":"어제 식단인증을 하지 않으셨습니다."}</p>
     <p class="yb2">인증을 해주시면 이 메시지는 사라집니다.</p>
     <p class="yb3">월간 미인증 횟수 : <b>${YCHK[pid]?.cnt??0}회</b></p>
     <button class="btn sm" data-act="gate-go" data-pid="${pid}" data-date="${y}">인증하러 가기</button></div>`;
