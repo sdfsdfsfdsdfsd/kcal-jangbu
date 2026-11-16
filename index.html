@@ -155,6 +155,8 @@ button{cursor:pointer}
 .ybanner p{margin:0}
 .ybanner .yb1{font-weight:800;font-size:16px;color:var(--over)}
 .ybanner .yb2{font-size:14px;color:var(--ink)}
+.ybanner .yb3{font-size:14px;font-weight:600}
+.ybanner .yb3 b{color:var(--over)}
 .ybanner .btn{margin-top:4px;background:var(--over)}
 .ybanner+.sec{margin-top:24px}
 .noshare{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:14px}
@@ -502,10 +504,15 @@ async function refreshYesterday(){
   if(ychkBusy||!S.db||!S.people.length)return;ychkBusy=true;
   try{
     const y=addDays(today(),-1);let changed=false;
+    const td=today(),m0=td.slice(0,7)+"-01",ds=[];for(let d=m0;d<td;d=addDays(d,1))ds.push(d);
     for(const p of S.people){
       let missed=false;
       if(y>=GATE_START){const L=await readDay(p.id,y);missed=!(L&&L.shared)}
-      const prev=YCHK[p.id];if(!prev||prev.day!==y||prev.missed!==missed){YCHK[p.id]={day:y,missed};changed=true}
+      /* 이번 달 미인증 횟수 (오늘 제외) */
+      const Ls=await Promise.all(ds.map(d=>readDay(p.id,d)));
+      const cnt=ds.filter((d,i)=>{const L=Ls[i];if(L&&L.shared)return false;
+        return d<GATE_START?(PRE_UNVERIFIED[p.id]||[]).includes(d):true}).length;
+      const prev=YCHK[p.id];if(!prev||prev.day!==y||prev.missed!==missed||prev.cnt!==cnt){YCHK[p.id]={day:y,missed,cnt};changed=true}
     }
     if(changed)render();
   }finally{ychkBusy=false}
@@ -514,6 +521,7 @@ function ybannerHTML(pid){
   const y=yesterdayMissed(pid);if(!y)return "";
   return `<div class="ybanner" role="alert"><p class="yb1">🚨어제 식단인증을 하지 않으셨습니다.</p>
     <p class="yb2">인증을 해주시면 이 메시지는 사라집니다.</p>
+    <p class="yb3">월간 미인증 횟수 : <b>${YCHK[pid]?.cnt??0}회</b></p>
     <button class="btn sm" data-act="gate-go" data-pid="${pid}" data-date="${y}">인증하러 가기</button></div>`;
 }
 const GATE={};                   /* pid -> {at, list} 캐시 */
