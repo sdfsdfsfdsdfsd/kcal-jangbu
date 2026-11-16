@@ -92,6 +92,9 @@ button{cursor:pointer}
 .exwhy .in{height:44px;font-size:16px}
 .exerr{margin:0;font-size:13px;font-weight:700;color:var(--over)}
 .exwhy .in.bad{border-color:var(--over);box-shadow:0 0 0 3px var(--over-soft)}
+.gtxt{margin:0;font-size:15px;font-weight:600}
+.glist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.glist li{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;font-weight:700;color:var(--over)}
 .exfoot{display:flex;justify-content:flex-end;gap:8px}
 .calsub{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:20px}
 .calsub .week{border-top:1px solid var(--line);padding-top:16px}
@@ -467,6 +470,46 @@ function dayText(pid,date){
 function allText(date){
   return isoDay(date)+"\n\n"+S.people.map(p=>personText(p.id,date)).join("\n\n\n");
 }
+/* ---------- 인증(톡방 공유) 확인 ---------- */
+const GATE_START="2026-11-15";   /* 이 날부터 검사 */
+const GATE={};                   /* pid -> {at, list} 캐시 */
+async function readDay(pid,date){
+  const k=key(pid,date);if(S.logs[k])return S.logs[k];
+  try{const r=await S.db.doc((typeof firebase!=="undefined"?"kcal_logs/":"logs/")+k).get();
+    if(r&&typeof r.data==="function")return r.exists?r.data():null;return r||null}catch(e){return null}
+}
+async function missingDays(pid,before){
+  const out=[];
+  for(let d=GATE_START;d<before;d=addDays(d,1)){
+    const L=await readDay(pid,d);
+    if(L&&(L.items||[]).length&&!L.shared)out.push(d);
+  }
+  return out;
+}
+let GATE_OPEN=false;
+async function gateCheck(pid,date){
+  if(!S.db||date<=GATE_START)return true;
+  const c=GATE[pid];let list;
+  if(c&&c.before===date&&Date.now()-c.at<15000)list=c.list;
+  else{list=await missingDays(pid,date);GATE[pid]={at:Date.now(),before:date,list}}
+  if(!list.length)return true;
+  showGate(pid,list);return false;
+}
+function showGate(pid,list){
+  if(GATE_OPEN)return;GATE_OPEN=true;
+  document.activeElement?.blur?.();
+  const nm=person(pid)?.name||"";
+  const days=list.map(d=>{const x=parse(d);return `${x.getMonth()+1}월 ${x.getDate()}일(${dowOf(d)})`});
+  document.getElementById("exbox").innerHTML=`<p class="exd">${esc(nm)}</p>
+    <h3 id="exq">${list.length===1?`${parse(list[0]).getDate()}일자`:`${list.length}일치`} 인증을 하지 않으셨습니다</h3>
+    <p class="gtxt">톡방에 공유해주셔야 입력이 가능합니다.</p>
+    <ul class="glist">${days.map((t,i)=>`<li><span>${t}</span><button class="btn sm" data-act="gate-go" data-pid="${pid}" data-date="${list[i]}">인증하러 가기</button></li>`).join("")}</ul>
+    <div class="exfoot"><button class="btn line" data-act="gate-close">닫기</button></div>`;
+  document.getElementById("exmodal").hidden=false;
+  document.querySelector('#exbox [data-act="gate-go"]')?.focus();
+}
+function closeGate(){GATE_OPEN=false;document.getElementById("exmodal").hidden=true}
+
 let M=null;
 function openEx(pids,date,pre){
   M={pids,date,pre,ans:Object.fromEntries(pids.map(p=>[p,exOf(p,date)])),why:Object.fromEntries(pids.map(p=>[p,S.logs[key(p,date)]?.exWhy||""]))};
@@ -494,6 +537,8 @@ function finishEx(){
   const m=M;document.getElementById("exmodal").hidden=true;M=null;
   for(const pid of m.pids){const v=m.ans[pid],w=v===false?String(m.why[pid]||"").trim():"";
     if(typeof v==="boolean"&&(v!==exOf(pid,m.date)||w!==(S.logs[key(pid,m.date)]?.exWhy||"")))setEx(pid,m.date,v,w)}
+  for(const pid of m.pids){const k=key(pid,m.date);if(!S.logs[k]?.shared&&items(pid,m.date).length){S.logs[k]={...(S.logs[k]||{person:pid,date:m.date,items:[]}),shared:new Date().toISOString()};saveDay(pid,m.date);delete GATE[pid]}}
+  render();
   copyText(m.pids.length===1?dayText(m.pids[0],m.date):allText(m.date),m.pre);
 }
 async function copyText(txt,preId){
@@ -514,10 +559,10 @@ function fail(e){
 function saveDay(pid,date){
   const k=key(pid,date),path="kcal_logs/"+k;
   return enqueue(path,async()=>{
-    const list=(S.logs[k]?.items)||[],ex=S.logs[k]?.ex,why=S.logs[k]?.exWhy;
+    const list=(S.logs[k]?.items)||[],ex=S.logs[k]?.ex,why=S.logs[k]?.exWhy,sh=S.logs[k]?.shared;
     if(!S.db) throw {code:"unavailable"};
-    const body={person:pid,date,items:list};if(typeof ex==="boolean")body.ex=ex;if(ex===false&&why)body.exWhy=String(why).slice(0,100);
-    if(list.length||typeof ex==="boolean") await S.db.doc(path).set(body);
+    const body={person:pid,date,items:list};if(typeof ex==="boolean")body.ex=ex;if(ex===false&&why)body.exWhy=String(why).slice(0,100);if(sh)body.shared=sh;
+    if(list.length||typeof ex==="boolean"||sh) await S.db.doc(path).set(body);
     else await S.db.doc(path).delete();
   }).catch(fail);
 }
@@ -528,8 +573,8 @@ function setEx(pid,date,v,why){
 const exOf=(pid,date)=>S.logs[key(pid,date)]?.ex;
 function setItems(pid,date,list){
   const k=key(pid,date);
-  const ex=S.logs[k]?.ex,why=S.logs[k]?.exWhy;
-  S.logs[k]={person:pid,date,items:list};if(typeof ex==="boolean")S.logs[k].ex=ex;if(why)S.logs[k].exWhy=why;
+  const ex=S.logs[k]?.ex,why=S.logs[k]?.exWhy,sh=S.logs[k]?.shared;
+  S.logs[k]={person:pid,date,items:list};if(typeof ex==="boolean")S.logs[k].ex=ex;if(why)S.logs[k].exWhy=why;if(sh)S.logs[k].shared=sh;
   render();saveDay(pid,date);
 }
 
@@ -711,7 +756,7 @@ let tu;function toastUndo(m){const t=document.getElementById("toast");t.innerHTM
 
 function addHTML(ctx,pid,date){
   const p=`${ctx}-${pid}`,d=draft(p);
-  return `<div class="sec"><p class="lbl">음식 입력</p>
+  return `<div class="sec" data-gate-pid="${pid}" data-gate-date="${date}"><p class="lbl">음식 입력</p>
     <div class="add stack">
       <div class="fl"><span>시간</span>${tselHTML(p+"-time",d.time,"time",`data-p="${p}"`)}</div>
       <div class="fl field"><label for="${p}-food">음식</label><input class="in" id="${p}-food" data-f="food" data-p="${p}" placeholder="음식 검색 또는 직접 입력" autocomplete="off" value="${esc(d.food)}">
@@ -961,6 +1006,16 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]");if(!b)return;
   const a=b.dataset.act,pid=b.dataset.pid,date=b.dataset.date,ctx=b.dataset.ctx;
   if(a!=="del")S.confirmDel=null;
+  if(a==="gate-close")return closeGate();
+  if(a==="gate-go"){closeGate();S.date=b.dataset.date;S.editing=null;subscribe();render();
+    setTimeout(()=>{const el=document.getElementById("row-"+b.dataset.pid)||document.querySelector(".share");
+      const sh=el&&el.querySelector?el.querySelector(".share"):null;(sh||el)?.scrollIntoView({behavior:"smooth",block:"center"})},400);
+    toast("이 날 일일표를 복사해서 톡방에 올려 주세요");return}
+  if(a==="add"||a==="bulk-toggle"||a==="bulk-add"){
+    const host=b.closest("[data-gate-pid]");
+    if(host&&!b.dataset.gateok){e.preventDefault();const gp=host.dataset.gatePid,gd=host.dataset.gateDate;
+      gateCheck(gp,gd).then(ok=>{if(ok){b.dataset.gateok="1";b.click();delete b.dataset.gateok}});return}
+  }
   if(a==="add")return addItem(ctx,pid,date);
   if(a==="bulk-toggle"){const p=b.dataset.p;BULK[p]={...(BULK[p]||{}),open:!(BULK[p]||{}).open};render();if(BULK[p].open)document.getElementById(p+"-bulk")?.focus();return}
   if(a==="bulk-add")return bulkAdd(ctx,pid,date,b.dataset.p);
@@ -1045,9 +1100,12 @@ document.addEventListener("focusout",e=>{
   if(e.target.dataset&&e.target.dataset.f==="food"&&S.sugg&&S.sugg.p===e.target.dataset.p){S.sugg=null;drawSugg(e.target.dataset.p)}
 });
 window.addEventListener("hashchange",go);
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&M){document.getElementById("exmodal").hidden=true;M=null}});
-document.getElementById("exmodal").addEventListener("click",e=>{if(e.target.id==="exmodal"){e.currentTarget.hidden=true;M=null}});
-document.addEventListener("focusin",e=>{if(e.target.dataset&&e.target.dataset.f==="food")loadDB()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&(M||GATE_OPEN)){document.getElementById("exmodal").hidden=true;M=null;GATE_OPEN=false}});
+document.getElementById("exmodal").addEventListener("click",e=>{if(e.target.id==="exmodal"){e.currentTarget.hidden=true;M=null;GATE_OPEN=false}});
+document.addEventListener("focusin",e=>{if(e.target.dataset&&e.target.dataset.f==="food")loadDB();
+  const host=e.target.closest&&e.target.closest("[data-gate-pid]");
+  if(host&&e.target.matches("input,select,textarea"))gateCheck(host.dataset.gatePid,host.dataset.gateDate).then(ok=>{if(!ok)e.target.blur()});
+});
 setTimeout(loadDB,1500);
 
 /* ---------- 시작 ---------- */
