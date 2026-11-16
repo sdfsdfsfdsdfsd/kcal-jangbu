@@ -507,7 +507,7 @@ function showGate(pid,list){
   const nm=person(pid)?.name||"";
   const days=list.map(d=>{const x=parse(d);return `${x.getMonth()+1}월 ${x.getDate()}일(${dowOf(d)})`});
   document.getElementById("exbox").innerHTML=`<p class="exd">${esc(nm)}</p>
-    <h3 id="exq">${gateDays(list)}일자 인증을 하지 않으셨습니다</h3>
+    <h3 id="exq">🚨${gateDays(list)}일자 인증을 하지 않으셨습니다.</h3>
     <p class="gtxt">톡방에 공유해주셔야 입력이 가능합니다.</p>
     <ul class="glist">${days.map((t,i)=>`<li><span>${t}</span><button class="btn sm" data-act="gate-go" data-pid="${pid}" data-date="${list[i]}">인증하러 가기</button></li>`).join("")}</ul>
     <div class="exfoot"><button class="btn line" data-act="gate-close">닫기</button></div>`;
