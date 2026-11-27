@@ -220,6 +220,18 @@ button{cursor:pointer}
 .tg{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .tgadd{border:1px solid var(--line-strong);background:var(--surface);border-radius:99px;padding:3px 10px;font-family:var(--f-body);font-size:12px;font-weight:700;color:var(--accent)}
 .tgadd:hover{border-color:var(--accent)}
+.gedit{list-style:none;display:flex;flex-direction:column;gap:8px;padding:10px 0 12px;border-bottom:1px solid var(--line)}
+.ge-h{display:flex;align-items:center;gap:8px}
+.ge-l{font-size:12px;font-weight:700;color:var(--muted);flex:0 0 auto}
+.ge-h .tsel{flex:1}
+.ge-h .tsel select{height:38px;font-size:14px}
+.ge-rows{display:flex;flex-direction:column;gap:6px}
+.ge-row{display:grid;grid-template-columns:minmax(0,1fr) 64px 76px 32px;gap:6px;align-items:center}
+.ge-row .in{height:38px;font-size:14px;width:100%;box-sizing:border-box;min-width:0}
+.ge-row.del .in{opacity:.4;text-decoration:line-through}
+.ge-x{height:38px;border:1px solid var(--line-strong);background:var(--surface);border-radius:7px;color:var(--over);font-weight:700}
+.gedit .tgadd{align-self:flex-start}
+@media (max-width:420px){.ge-row{grid-template-columns:minmax(0,1fr) 54px 64px 30px;gap:4px}}
 .gaddrow{list-style:none;display:flex;flex-direction:column;gap:6px;padding:8px 0;border-bottom:1px dashed var(--line)}
 .gaddrow .in{height:40px;font-size:15px;width:100%;box-sizing:border-box}
 .gaddprev{margin:0;font-size:12px;color:var(--muted)}
@@ -693,16 +705,44 @@ function saveGAdd(){
   setItems(A.pid,A.date,[...items(A.pid,A.date),{id:uid(),time:A.t||"",food:it.food,grams:it.grams||null,kcal:it.kcal,per:it.grams?it.kcal/it.grams:null,via:"manual"}]);
   toast(`[${A.t||"시간 없음"}] ${it.food} ${fmt(it.kcal)} kcal 추가했어요`);
 }
+function saveGEdit(){
+  const G=S.gEdit;if(!G)return;
+  if(!/^\d{2}:\d{2}$/.test(G.v)){toast("시간을 확인해 주세요.");return}
+  const keep=[];
+  for(const r of G.rows){
+    if(r.del)continue;
+    const food=String(r.food).trim(),gs=String(r.grams).replace(/,/g,"").trim(),ks=String(r.kcal).replace(/,/g,"").trim();
+    if(!food&&!gs&&!ks)continue;   /* 빈 줄은 무시 */
+    let k=ks===""?NaN:Number(ks),g=gs===""?null:Number(gs);
+    if(!food){toast("음식 이름이 빈 줄이 있어요.");return}
+    if(!isFinite(k)){   /* 칼로리를 비우면 g 기준으로 DB에서 계산 */
+      const it=parseOne(food+(g?" "+g+"g":""));
+      if(it&&it.kcal!=null)k=it.kcal;else{toast(`'${food}' 칼로리를 적어 주세요.`);return}
+    }
+    if(g!=null&&!(isFinite(g)&&g>0))g=null;
+    keep.push({id:r.id||uid(),time:G.v,food,grams:g,kcal:Math.round(k),per:g?Math.round(k)/g:null,...(r.via?{via:r.via}:{via:"manual"})});
+  }
+  const others=items(G.pid,G.date).filter(x=>(x.time||"")!==G.t);
+  S.gEdit=null;
+  setItems(G.pid,G.date,[...others,...keep]);
+  toast(keep.length?`[${G.v}] ${keep.length}개로 저장했어요`:`[${G.t||"시간 없음"}] 메뉴를 모두 지웠어요`);
+}
 function ledgerHTML(ctx,pid,date){
   const p=`${ctx}-${pid}`,list=items(pid,date),d=draft(p),tot=dayTotal(pid,date);
   const g=goalFor(pid,monday(date)),daily=g?g.v/7:0;
+  const isGE=gr=>{const G=S.gEdit;return G&&G.ctx===ctx&&G.pid===pid&&G.date===date&&G.t===gr.t};
   const tgHead=gr=>{
-    const T=S.tEdit;
-    if(T&&T.ctx===ctx&&T.pid===pid&&T.date===date&&T.t===gr.t)
-      return `<li class="tg editing">${tselHTML(p+"-tg",T.v,"tgedit")}
-        <button class="btn sm" data-act="tg-save">저장</button><button class="btn sm line" data-act="tg-cancel">취소</button></li>`;
-    return `<li class="tg"><button class="tgb" data-act="tg" data-ctx="${ctx}" data-pid="${pid}" data-date="${date}" data-t="${gr.t}" title="눌러서 시간 바꾸기">${gr.t?"["+gr.t+"]":"시간 없음"} <span>✎ 시간 변경</span></button>
-      <button class="tgadd" data-act="gadd" data-ctx="${ctx}" data-pid="${pid}" data-date="${date}" data-t="${gr.t}">＋ 메뉴 추가</button></li>`;
+    if(isGE(gr)){const G=S.gEdit;
+      return `<li class="gedit"><div class="ge-h"><span class="ge-l">시간</span>${tselHTML(p+"-gt",G.v,"getime")}</div>
+        <div class="ge-rows">${G.rows.map((r,i)=>`<div class="ge-row ${r.del?"del":""}">
+          <input class="in" data-f="ge" data-i="${i}" data-k="food" id="${p}-ge${i}f" value="${esc(r.food)}" placeholder="음식" aria-label="음식">
+          <input class="in num" data-f="ge" data-i="${i}" data-k="grams" id="${p}-ge${i}g" value="${esc(r.grams)}" inputmode="decimal" placeholder="g" aria-label="그램">
+          <input class="in num" data-f="ge" data-i="${i}" data-k="kcal" id="${p}-ge${i}k" value="${esc(r.kcal)}" inputmode="numeric" placeholder="kcal" aria-label="칼로리">
+          <button class="ge-x" data-act="ge-del" data-i="${i}" title="${r.del?"되살리기":"삭제"}" aria-label="${r.del?"되살리기":"삭제"}">${r.del?"↺":"✕"}</button></div>`).join("")}</div>
+        <button class="tgadd" data-act="ge-add">＋ 메뉴 추가</button>
+        <div class="erow-b"><button class="btn sm line" data-act="ge-cancel">취소</button><button class="btn sm" data-act="ge-save">저장</button></div></li>`;
+    }
+    return `<li class="tg"><button class="tgb" data-act="ge-open" data-ctx="${ctx}" data-pid="${pid}" data-date="${date}" data-t="${gr.t}" title="눌러서 시간·메뉴 수정">${gr.t?"["+gr.t+"]":"시간 없음"} <span>✎ 수정</span></button></li>`;
   };
   const gAddRow=gr=>{
     const A=S.gAdd;if(!(A&&A.ctx===ctx&&A.pid===pid&&A.date===date&&A.t===gr.t))return "";
@@ -710,7 +750,7 @@ function ledgerHTML(ctx,pid,date){
       <p class="gaddprev" id="${p}-gaddprev">${gAddPrev(A.text)}</p>
       <div class="erow-b"><button class="btn sm line" data-act="gadd-cancel">취소</button><button class="btn sm" data-act="gadd-save">추가</button></div></li>`;
   };
-  const rows=groups(list).map(gr=>tgHead(gr)+gr.items.map(it=>{
+  const rows=groups(list).map(gr=>tgHead(gr)+(isGE(gr)?"":gr.items.map(it=>{
     const E=S.editing;
     if(E&&E.pid===pid&&E.date===date&&E.id===it.id&&E.ctx===ctx){
       return `<li class="row editing"><div class="erow">
@@ -725,7 +765,7 @@ function ledgerHTML(ctx,pid,date){
       <span class="k num">${fmt(it.kcal)}</span>
       <span class="acts"><button data-act="edit" data-ctx="${ctx}" data-pid="${pid}" data-date="${date}" data-id="${it.id}" title="수정" aria-label="수정">✎</button>
       <button class="${del?"danger":""}" data-act="del" data-pid="${pid}" data-date="${date}" data-id="${it.id}" title="삭제" aria-label="삭제">${del?"삭제?":"✕"}</button></span></li>`;
-  }).join("")+gAddRow(gr)+(gr.items.length>1?`<li class="gsum">→ ${fmt(gr.items.reduce((a,x)=>a+(+x.kcal||0),0))} kcal</li>`:"")).join("");
+  }).join(""))+(gr.items.length>1&&!isGE(gr)?`<li class="gsum">→ ${fmt(gr.items.reduce((a,x)=>a+(+x.kcal||0),0))} kcal</li>`:"")).join("");
   const diff=daily-tot;
   return `<div class="sec"><p class="lbl">섭취 음식 <span>${longDate(date)}</span></p>
     <div class="foodbox"><ul class="ledger">${rows||`<li class="empty">아직 기록이 없어요. 음식 입력 칸에서 검색해 추가하세요.</li>`}</ul></div>
@@ -1127,6 +1167,14 @@ document.addEventListener("click",e=>{
   if(a==="esave")return saveEdit();
   if(a==="tg"){S.tEdit={ctx,pid,date,t:b.dataset.t,v:b.dataset.t||nowHM()};render();document.getElementById(`${ctx}-${pid}-tg-h`)?.focus();return}
   if(a==="tg-save")return saveTg();
+  if(a==="ge-open"){const grp=items(pid,date).filter(x=>(x.time||"")===b.dataset.t);
+    S.gEdit={ctx,pid,date,t:b.dataset.t,v:b.dataset.t||nowHM(),rows:grp.map(x=>({id:x.id,food:x.food,grams:x.grams?String(x.grams):"",kcal:String(x.kcal),via:x.via,per:x.per,del:false}))};
+    S.editing=null;S.tEdit=null;return render()}
+  if(a==="ge-cancel"){S.gEdit=null;return render()}
+  if(a==="ge-del"){const r=S.gEdit.rows[+b.dataset.i];if(r.id)r.del=!r.del;else S.gEdit.rows.splice(+b.dataset.i,1);return render()}
+  if(a==="ge-add"){S.gEdit.rows.push({id:null,food:"",grams:"",kcal:"",del:false});render();
+    document.getElementById(`${S.gEdit.ctx}-${S.gEdit.pid}-ge${S.gEdit.rows.length-1}f`)?.focus();return}
+  if(a==="ge-save")return saveGEdit();
   if(a==="gadd"){S.gAdd={ctx,pid,date,t:b.dataset.t,text:""};S.tEdit=null;S.editing=null;loadDB();render();document.getElementById(`${ctx}-${pid}-gadd`)?.focus();return}
   if(a==="gadd-save")return saveGAdd();
   if(a==="gadd-cancel"){S.gAdd=null;return render()}
@@ -1152,6 +1200,8 @@ document.addEventListener("input",e=>{
   if(f==="exwhy"&&M){M.why[el.dataset.pid]=el.value;if(el.value.trim()){el.classList.remove("bad");const er=document.getElementById("exerr-"+el.dataset.pid);if(er)er.hidden=true}return}
   if(f==="bulk"){const p=el.dataset.p;BULK[p]={...(BULK[p]||{}),open:true,text:el.value};const pv=document.getElementById(p+"-bulkprev");if(pv)pv.innerHTML=bulkPrevHTML(p);return}
   if(f==="tgedit"&&S.tEdit){S.tEdit.v=tv;return}
+  if(f==="getime"&&S.gEdit){S.gEdit.v=tv;return}
+  if(f==="ge"&&S.gEdit){const r=S.gEdit.rows[+el.dataset.i];if(r)r[el.dataset.k]=el.value;return}
   if(f==="gadd"&&S.gAdd){S.gAdd.text=el.value;const pv=document.getElementById(`${S.gAdd.ctx}-${S.gAdd.pid}-gaddprev`);if(pv)pv.innerHTML=gAddPrev(el.value);return}
   if(S.editing&&f==="etime"){S.editing.time=tv;return}
   if(f==="food"||f==="g"||f==="kcal"){
@@ -1183,6 +1233,7 @@ document.addEventListener("keydown",e=>{
   if(f==="efood"||f==="eg"||f==="ekcal"){e.preventDefault();saveEdit()}
   if(f==="goal"){e.preventDefault();saveGoal(el.dataset.ctx,el.dataset.pid)}
   if(f==="tgedit"){e.preventDefault();saveTg()}
+  if(f==="ge"){e.preventDefault();saveGEdit()}
   if(f==="gadd"){e.preventDefault();saveGAdd()}
   if(f==="exwhy"&&M){e.preventDefault();finishEx()}
 });
